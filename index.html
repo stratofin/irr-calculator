@@ -501,6 +501,99 @@
       .result-big { font-size: 34px; }
     }
 
+    /* ── Controls wrapper (row + toggle btn) ── */
+    .controls-wrapper {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .controls-wrapper .controls-row { margin-bottom: 0; flex: 1; }
+
+    .conv-toggle-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+    .conv-toggle-btn:hover { background: var(--surface2); color: var(--text); }
+    .conv-toggle-btn.active {
+      background: var(--primary-glow);
+      border-color: var(--primary);
+      color: var(--accent);
+    }
+
+    /* ── Converter panel ── */
+    .converter-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      animation: panelIn 0.18s ease;
+    }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .conv-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .conv-amount-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .conv-amount-wrap { flex: 1; min-width: 180px; max-width: 340px; }
+    .conv-eq {
+      font-size: 22px;
+      color: var(--text-muted);
+      font-weight: 300;
+      flex-shrink: 0;
+    }
+    .conv-result-box {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 160px;
+    }
+    .conv-result-num {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: -0.5px;
+    }
+    .conv-result-code {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .conv-rate-info {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.2px;
+    }
+
     /* ── Desktop large screen enhancements ── */
     @media (min-width: 960px) {
       .main { max-width: 1240px; padding: 24px 40px; }
@@ -558,45 +651,69 @@
 <div class="main">
 
   <!-- Top controls -->
-  <div class="controls-row">
-    <div class="control-block">
-      <label id="lbl-currency">💱 貨幣</label>
-      <select id="currency" onchange="onCurrencyChange()">
-        <option value="USD" data-symbol="$">🇺🇸 美元 USD $</option>
-        <option value="GBP" data-symbol="£">🇬🇧 英鎊 GBP £</option>
-        <option value="EUR" data-symbol="€">🇪🇺 歐元 EUR €</option>
-        <option value="JPY" data-symbol="¥">🇯🇵 日元 JPY ¥</option>
-        <option value="KRW" data-symbol="₩">🇰🇷 韓幣 KRW ₩</option>
-        <option value="TWD" data-symbol="NT$">🇹🇼 台幣 TWD NT$</option>
-        <option value="CNY" data-symbol="¥">🇨🇳 人民幣 CNY ¥</option>
-      </select>
-    </div>
+  <div class="controls-wrapper">
+    <div class="controls-row" id="controls-row">
+      <div class="control-block">
+        <label id="lbl-currency">💱 貨幣</label>
+        <select id="currency" onchange="onCurrencyChange()">
+          <option value="USD" data-symbol="$">🇺🇸 美元 USD $</option>
+          <option value="GBP" data-symbol="£">🇬🇧 英鎊 GBP £</option>
+          <option value="EUR" data-symbol="€">🇪🇺 歐元 EUR €</option>
+          <option value="JPY" data-symbol="¥">🇯🇵 日元 JPY ¥</option>
+          <option value="KRW" data-symbol="₩">🇰🇷 韓幣 KRW ₩</option>
+          <option value="TWD" data-symbol="NT$">🇹🇼 台幣 TWD NT$</option>
+          <option value="CNY" data-symbol="¥">🇨🇳 人民幣 CNY ¥</option>
+        </select>
+      </div>
 
-    <div class="controls-divider"></div>
+      <div class="controls-divider" id="conv-divider" style="display:none"></div>
 
-    <div class="control-block">
-      <label id="lbl-convert">🔄 換算至</label>
-      <select id="convert-currency" onchange="updateRateDisplay()">
-        <option value="USD" data-symbol="$">🇺🇸 USD $</option>
-        <option value="GBP" data-symbol="£">🇬🇧 GBP £</option>
-        <option value="EUR" data-symbol="€">🇪🇺 EUR €</option>
-        <option value="JPY" data-symbol="¥">🇯🇵 JPY ¥</option>
-        <option value="KRW" data-symbol="₩">🇰🇷 KRW ₩</option>
-        <option value="TWD" data-symbol="NT$" selected>🇹🇼 TWD NT$</option>
-        <option value="CNY" data-symbol="¥">🇨🇳 CNY ¥</option>
-      </select>
-      <span class="rate-badge loading" id="rate-badge" onclick="fetchRates()" title="點擊重新載入">…</span>
-    </div>
+      <div class="control-block" id="conv-col" style="display:none">
+        <label id="lbl-convert">🔄 換算至</label>
+        <select id="convert-currency" onchange="onConvertCurrencyChange()">
+          <option value="USD" data-symbol="$">🇺🇸 USD $</option>
+          <option value="GBP" data-symbol="£">🇬🇧 GBP £</option>
+          <option value="EUR" data-symbol="€">🇪🇺 EUR €</option>
+          <option value="JPY" data-symbol="¥">🇯🇵 JPY ¥</option>
+          <option value="KRW" data-symbol="₩">🇰🇷 KRW ₩</option>
+          <option value="TWD" data-symbol="NT$" selected>🇹🇼 TWD NT$</option>
+          <option value="CNY" data-symbol="¥">🇨🇳 CNY ¥</option>
+        </select>
+        <span class="rate-badge loading" id="rate-badge" onclick="fetchRates()" title="點擊重新載入">…</span>
+      </div>
 
-    <div class="controls-divider"></div>
+      <div class="controls-divider"></div>
 
-    <div class="control-block">
-      <label id="lbl-method">📅 投資方式</label>
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="btn-single" onclick="setMode('single')">單筆投資</button>
-        <button class="mode-btn" id="btn-periodic" onclick="setMode('periodic')">定期定額</button>
+      <div class="control-block">
+        <label id="lbl-method">📅 投資方式</label>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="btn-single" onclick="setMode('single')">單筆投資</button>
+          <button class="mode-btn" id="btn-periodic" onclick="setMode('periodic')">定期定額</button>
+        </div>
       </div>
     </div>
+    <button class="conv-toggle-btn" id="conv-toggle-btn" onclick="toggleConverter()">⇄ 幣值換算</button>
+  </div>
+
+  <!-- Converter panel (hidden by default) -->
+  <div id="converter-panel" class="converter-panel" style="display:none">
+    <div class="conv-panel-header">
+      <span>💱</span>
+      <span id="conv-panel-title">幣值換算工具</span>
+    </div>
+    <div class="conv-amount-row">
+      <div class="input-wrap conv-amount-wrap">
+        <span class="input-prefix" id="conv-from-sym">$</span>
+        <input type="number" id="conv-amount" placeholder="1" step="any" min="0" oninput="updateConverter()">
+        <span class="input-suffix" id="conv-from-code">USD</span>
+      </div>
+      <div class="conv-eq">=</div>
+      <div class="conv-result-box">
+        <span class="conv-result-num" id="conv-result-num">—</span>
+        <span class="conv-result-code" id="conv-result-code">TWD</span>
+      </div>
+    </div>
+    <div class="conv-rate-info" id="conv-rate-info">—</div>
   </div>
 
   <!-- Error message -->
@@ -1334,6 +1451,8 @@ const T = {
     errAbnormal: '計算結果異常，請確認數值',
     errGeneral: '計算發生錯誤：',
     rateLoading: '匯率載入中…', rateError: '匯率失敗 ↻',
+    convToggle: '⇄ 幣值換算',
+    convPanelTitle: '幣值換算工具',
   },
   en: {
     subtitle: 'Internal Rate of Return Calculator',
@@ -1371,6 +1490,8 @@ const T = {
     errAbnormal: 'Abnormal result. Please check inputs.',
     errGeneral: 'Calculation error: ',
     rateLoading: 'Loading rates…', rateError: 'Rate failed ↻',
+    convToggle: '⇄ FX Convert',
+    convPanelTitle: 'Currency Converter',
   }
 };
 
@@ -1403,6 +1524,8 @@ function applyLang() {
   set('bd-lbl-return', L.bdReturn);
   set('bd-lbl-profit', L.bdProfit);
   set('bd-lbl-convert', L.bdConvert);
+  set('conv-toggle-btn', L.convToggle);
+  set('conv-panel-title', L.convPanelTitle);
   // Card status labels
   ['invest','return','irr'].forEach(card => {
     const el = document.getElementById('status-' + card);
@@ -1434,6 +1557,7 @@ function getConvertSymbol() {
 }
 
 async function fetchRates() {
+  if (!showConverter) return;          // only fetch when panel is open
   const base = getCurrencyCode();
   const badge = document.getElementById('rate-badge');
   badge.textContent = t('rateLoading');
@@ -1446,14 +1570,17 @@ async function fetchRates() {
     exchangeRates[base] = 1;
     lastFetchBase = base;
     updateRateDisplay();
+    updateConverter();
   } catch(e) {
     exchangeRates = {};
     badge.textContent = t('rateError');
     badge.className = 'rate-badge error';
+    document.getElementById('conv-rate-info').textContent = t('rateError');
   }
 }
 
 function updateRateDisplay() {
+  if (!showConverter) return;
   const badge = document.getElementById('rate-badge');
   const base = getCurrencyCode();
   const target = getConvertCode();
@@ -1465,14 +1592,14 @@ function updateRateDisplay() {
   const rate = exchangeRates[target];
   badge.textContent = `1 ${base} = ${rate >= 10 ? rate.toFixed(1) : rate.toFixed(4)} ${target}`;
   badge.className = 'rate-badge';
-  // Refresh convert row in result if visible
   if (lastResultFV !== null) showConvertRow(lastResultFV);
 }
 
 function showConvertRow(fv) {
+  const item = document.getElementById('bd-convert-item');
+  if (!showConverter) { item.style.display = 'none'; return; }
   const target = getConvertCode();
   const base = getCurrencyCode();
-  const item = document.getElementById('bd-convert-item');
   const el = document.getElementById('bd-convert');
   if (base === target || !exchangeRates[target]) { item.style.display = 'none'; return; }
   const rate = exchangeRates[target];
@@ -1485,14 +1612,99 @@ function onCurrencyChange() {
   updateCurrencyDisplay();
   exchangeRates = {};
   lastFetchBase = '';
+  if (showConverter) {
+    updateRateDisplay();
+    updateConverterLabels();
+  }
+}
+
+function onConvertCurrencyChange() {
+  exchangeRates = {};
+  lastFetchBase = '';
   updateRateDisplay();
+  updateConverter();
+}
+
+// ── Converter toggle & live converter ────
+let showConverter = false;
+
+function toggleConverter() {
+  showConverter = !showConverter;
+  const btn = document.getElementById('conv-toggle-btn');
+  const col = document.getElementById('conv-col');
+  const divider = document.getElementById('conv-divider');
+  const panel = document.getElementById('converter-panel');
+  if (showConverter) {
+    col.style.display = '';
+    divider.style.display = '';
+    panel.style.display = 'block';
+    btn.classList.add('active');
+    if (!exchangeRates[getConvertCode()]) fetchRates();
+    else { updateRateDisplay(); updateConverter(); }
+  } else {
+    col.style.display = 'none';
+    divider.style.display = 'none';
+    panel.style.display = 'none';
+    btn.classList.remove('active');
+    document.getElementById('bd-convert-item').style.display = 'none';
+  }
+}
+
+function updateConverterLabels() {
+  const base = getCurrencyCode();
+  const baseSel = document.getElementById('currency');
+  const baseSym = baseSel.selectedOptions[0]?.dataset.symbol || '';
+  document.getElementById('conv-from-sym').textContent = baseSym;
+  document.getElementById('conv-from-code').textContent = base;
+  updateConverter();
+}
+
+function updateConverter() {
+  if (!showConverter) return;
+  const base = getCurrencyCode();
+  const target = getConvertCode();
+  const baseSel = document.getElementById('currency');
+  const baseSym = baseSel.selectedOptions[0]?.dataset.symbol || '';
+  const targetSym = getConvertSymbol();
+
+  // Update labels
+  document.getElementById('conv-from-sym').textContent = baseSym;
+  document.getElementById('conv-from-code').textContent = base;
+  document.getElementById('conv-result-code').textContent = target;
+
+  const amtEl = document.getElementById('conv-amount');
+  const amt = parseFloat(amtEl.value);
+  const resultEl = document.getElementById('conv-result-num');
+  const rateInfoEl = document.getElementById('conv-rate-info');
+
+  if (base === target) {
+    resultEl.textContent = isNaN(amt) ? '—' : amt.toLocaleString();
+    rateInfoEl.textContent = '1 ' + base + ' = 1 ' + target;
+    return;
+  }
+
+  const rate = exchangeRates[target];
+  if (!rate) {
+    resultEl.textContent = '—';
+    rateInfoEl.textContent = t('rateLoading');
+    return;
+  }
+
+  if (!isNaN(amt) && amt >= 0) {
+    const converted = amt * rate;
+    const decimals = converted >= 100 ? 0 : converted >= 1 ? 2 : 4;
+    resultEl.textContent = targetSym + converted.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+  } else {
+    resultEl.textContent = '—';
+  }
+  const rateDecimals = rate >= 10 ? 2 : 4;
+  rateInfoEl.textContent = `1 ${base} = ${rate.toLocaleString(undefined, { maximumFractionDigits: rateDecimals })} ${target}`;
 }
 
 // ── Init ─────────────────────────────────
 updateHint();
 updateCurrencyDisplay();
 applyLang();
-fetchRates();
 </script>
 
 </body>
