@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRR Sheet</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --surface3: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --text-dim: #484f58;
+      --primary: #2f81f7;
+      --primary-dark: #1f6feb;
+      --primary-glow: rgba(47,129,247,0.15);
+      --green: #3fb950;
+      --green-glow: rgba(63,185,80,0.15);
+      --orange: #d29922;
+      --red: #f85149;
+      --accent: #58a6ff;
+      --gold: #e3b341;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 24px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a2332 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon { font-size: 22px; }
+    .header-text h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #58a6ff, #79c0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-text p { color: var(--text-muted); font-size: 11px; margin-top: 1px; }
+    .header-badge {
+      margin-left: auto;
+      background: var(--primary-glow);
+      border: 1px solid var(--primary);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Main layout ── */
+    .main { max-width: 960px; margin: 0 auto; padding: 14px 20px; }
+
+    /* ── Lang button ── */
+    .lang-btn {
+      margin-left: auto;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.8px;
+    }
+    .lang-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    /* ── Rate badge ── */
+    .rate-badge {
+      font-size: 10px;
+      color: var(--green);
+      background: var(--green-glow);
+      border: 1px solid rgba(63,185,80,0.3);
+      padding: 2px 7px;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .rate-badge:hover { opacity: 0.7; }
+    .rate-badge.loading { color: var(--text-muted); background: var(--surface3); border-color: var(--border); }
+    .rate-badge.error   { color: var(--red); background: rgba(248,81,73,0.1); border-color: rgba(248,81,73,0.3); }
+
+    /* ── Top controls ── */
+    .controls-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .controls-divider {
+      width: 1px;
+      background: var(--border);
+      flex-shrink: 0;
+      align-self: stretch;
+    }
+    .control-block {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+    }
+    .control-block label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .control-block > select,
+    .control-block > .mode-toggle {
+      flex: 1;
+    }
+
+    select, input[type="number"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      padding: 6px 10px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    select:focus, input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+    select { cursor: pointer; padding-right: 8px; min-width: 160px; }
+    .controls-row select { min-width: 0; padding: 5px 8px; font-size: 12px; width: 100%; }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      gap: 2px;
+      width: 100%;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      flex: 1;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+    .mode-btn:not(.active):hover { background: var(--surface3); color: var(--text); }
+
+    /* ── Three data sections ── */
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .data-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .data-card.has-data { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+    .data-card.calculated { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
+    .data-card.error-state { border-color: var(--red); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card-label {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--surface3);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .data-card.has-data .card-label { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .data-card.calculated .card-label { background: var(--green); border-color: var(--green); color: #fff; }
+
+    .card-title { font-size: 13px; font-weight: 600; }
+    .card-status {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-filled { background: var(--primary-glow); color: var(--accent); border: 1px solid rgba(47,129,247,0.3); }
+    .status-empty { background: var(--surface3); color: var(--text-dim); border: 1px solid var(--border); }
+    .status-result { background: var(--green-glow); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+
+    /* Field groups */
+    .field-group { margin-bottom: 8px; }
+    .field-group:last-child { margin-bottom: 0; }
+    .field-group label {
+      display: block;
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+    .input-prefix, .input-suffix {
+      padding: 6px 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface3);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .input-suffix { border-right: none; border-left: 1px solid var(--border); }
+    .input-wrap input {
+      border: none;
+      background: transparent;
+      padding: 6px 8px;
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      outline: none;
+    }
+    .input-wrap input::placeholder { color: var(--text-dim); }
+    .input-wrap input.result-value { color: var(--green); font-weight: 700; }
+
+    /* Two-column field row */
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .field-row .field-group { margin-bottom: 0; }
+    .field-row select { width: 100%; }
+
+    /* Clear field btn */
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px 6px;
+      font-size: 11px;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+    .clear-btn:hover { color: var(--red); }
+
+    /* Summary inside card */
+    .card-summary {
+      background: var(--surface3);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: none;
+    }
+    .card-summary.visible { display: block; }
+    .card-summary .sum-row { display: flex; justify-content: space-between; }
+    .card-summary .sum-value { color: var(--text); font-weight: 600; }
+
+    /* ── Calculate button area ── */
+    .action-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .calc-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 6px 16px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hint-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .hint-dot.ready { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+    .hint-dot.partial { background: var(--orange); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .btn-row { display: flex; gap: 12px; align-items: center; }
+
+    .calc-btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 11px 44px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 3px 14px rgba(47,129,247,0.3);
+    }
+    .calc-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 22px rgba(47,129,247,0.45); }
+    .calc-btn:active { transform: translateY(0); }
+    .calc-btn:disabled { background: var(--surface3); color: var(--text-dim); box-shadow: none; cursor: not-allowed; transform: none; }
+    .calc-btn .btn-icon { font-size: 16px; }
+
+    .reset-btn {
+      background: var(--surface2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .reset-btn:hover { background: var(--surface3); color: var(--text); border-color: var(--text-muted); }
+
+    /* ── Result area ── */
+    .result-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: none;
+    }
+    .result-area.visible { display: block; }
+
+    .result-header {
+      background: linear-gradient(135deg, #0a3b00 0%, #0d2b00 100%);
+      border-bottom: 1px solid rgba(63,185,80,0.3);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .result-header-icon { font-size: 22px; }
+    .result-header-text h3 { font-size: 16px; font-weight: 700; color: var(--green); }
+    .result-header-text p { font-size: 12px; color: rgba(63,185,80,0.6); margin-top: 2px; }
+
+    .result-body { padding: 24px; }
+    .result-main {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .result-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .result-big {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .result-unit { font-size: 20px; color: var(--green); font-weight: 600; }
+    .result-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .result-breakdown {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .breakdown-item {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      border: 1px solid var(--border);
+    }
+    .breakdown-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+    .breakdown-value { font-size: 18px; font-weight: 700; color: var(--text); }
+    .breakdown-value.highlight { color: var(--green); }
+    .breakdown-value.primary { color: var(--accent); }
+
+    /* Error message */
+    .error-msg {
+      background: rgba(248,81,73,0.1);
+      border: 1px solid rgba(248,81,73,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      color: var(--red);
+      font-size: 13px;
+      display: none;
+      margin-bottom: 16px;
+      align-items: center;
+      gap: 8px;
+    }
+    .error-msg.visible { display: flex; }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .data-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .result-breakdown { grid-template-columns: 1fr 1fr; }
+      .main { padding: 12px 12px; }
+      .calc-btn { padding: 10px 32px; font-size: 14px; }
+    }
+    @media (max-width: 600px) {
+      .controls-row { grid-template-columns: 1fr; }
+      .controls-divider { width: 100%; height: 1px; }
+    }
+    @media (max-width: 460px) {
+      .result-breakdown { grid-template-columns: 1fr; }
+      .result-big { font-size: 30px; }
+      .header { padding: 8px 14px; }
+      .header-text h1 { font-size: 16px; }
+    }
+    @media (max-width: 460px) {
+      .result-breakdown { grid-template-columns: 1fr; }
+      .result-big { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header class="header">
+  <div class="header-icon">📊</div>
+  <div class="header-text">
+    <h1>IRR Sheet</h1>
+    <p id="subtitle-text">Internal Rate of Return 年化報酬率計算器</p>
+  </div>
+  <div class="header-badge">FINANCE TOOL</div>
+  <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
+</header>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- Top controls -->
+  <div class="controls-row">
+    <div class="control-block">
+      <label id="lbl-currency">💱 貨幣</label>
+      <select id="currency" onchange="onCurrencyChange()">
+        <option value="USD" data-symbol="$">🇺🇸 美元 USD $</option>
+        <option value="GBP" data-symbol="£">🇬🇧 英鎊 GBP £</option>
+        <option value="EUR" data-symbol="€">🇪🇺 歐元 EUR €</option>
+        <option value="JPY" data-symbol="¥">🇯🇵 日元 JPY ¥</option>
+        <option value="KRW" data-symbol="₩">🇰🇷 韓幣 KRW ₩</option>
+        <option value="TWD" data-symbol="NT$">🇹🇼 台幣 TWD NT$</option>
+        <option value="CNY" data-symbol="¥">🇨🇳 人民幣 CNY ¥</option>
+      </select>
+    </div>
+
+    <div class="controls-divider"></div>
+
+    <div class="control-block">
+      <label id="lbl-convert">🔄 換算至</label>
+      <select id="convert-currency" onchange="updateRateDisplay()">
+        <option value="USD" data-symbol="$">🇺🇸 USD $</option>
+        <option value="GBP" data-symbol="£">🇬🇧 GBP £</option>
+        <option value="EUR" data-symbol="€">🇪🇺 EUR €</option>
+        <option value="JPY" data-symbol="¥">🇯🇵 JPY ¥</option>
+        <option value="KRW" data-symbol="₩">🇰🇷 KRW ₩</option>
+        <option value="TWD" data-symbol="NT$" selected>🇹🇼 TWD NT$</option>
+        <option value="CNY" data-symbol="¥">🇨🇳 CNY ¥</option>
+      </select>
+      <span class="rate-badge loading" id="rate-badge" onclick="fetchRates()" title="點擊重新載入">…</span>
+    </div>
+
+    <div class="controls-divider"></div>
+
+    <div class="control-block">
+      <label id="lbl-method">📅 投資方式</label>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-single" onclick="setMode('single')">單筆投資</button>
+        <button class="mode-btn" id="btn-periodic" onclick="setMode('periodic')">定期定額</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-msg" id="error-msg">
+    <span>⚠️</span>
+    <span id="error-text">請確認輸入資料</span>
+  </div>
+
+  <!-- ══ THREE DATA CARDS ══ -->
+  <div class="data-grid">
+
+    <!-- ── Card A: Investment ── -->
+    <div class="data-card" id="card-invest">
+      <div class="card-header">
+        <div class="card-label" id="label-invest">A</div>
+        <div class="card-title" id="card-a-title">投資輸入</div>
+        <span class="card-status status-empty" id="status-invest">未填入</span>
+      </div>
+
+      <!-- Single mode -->
+      <div id="single-mode-invest">
+        <div class="field-group">
+          <label id="lbl-annual-amt">每年投入金額</label>
+          <div class="input-wrap">
+            <span class="input-prefix" id="prefix-single">$</span>
+            <input type="number" id="single-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('invest')">
+            <button class="clear-btn" onclick="clearField('single-amount', 'invest')" title="清除">✕</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>投資年期（年）</label>
+          <div class="input-wrap">
+            <input type="number" id="single-years" placeholder="10" min="1" max="50" step="1" oninput="onFieldChange('invest')" style="padding-left:12px">
+            <span class="input-suffix">年</span>
+          </div>
+        </div>
+        <div class="card-summary" id="summary-single">
+          <div class="sum-row">
+            <span>總投入：</span>
+            <span class="sum-value" id="sum-single-total">—</span>
+          </div>
+          <div class="sum-row" style="margin-top:4px">
+            <span>總期數：</span>
+            <span class="sum-value" id="sum-single-periods">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Periodic mode -->
+      <div id="periodic-mode-invest" class="hidden">
+        <div class="field-group">
+          <label id="lbl-periodic-amt">每期投入金額</label>
+          <div class="input-wrap">
+            <span class="input-prefix" id="prefix-periodic">$</span>
+            <input type="number" id="pmt-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('invest')">
+            <button class="clear-btn" onclick="clearField('pmt-amount', 'invest')" title="清除">✕</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>投資年期（年）</label>
+            <div class="input-wrap">
+              <input type="number" id="pmt-years" placeholder="10" min="1" max="50" step="1" oninput="onFieldChange('invest')">
+              <span class="input-suffix">年</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>繳款頻率</label>
+            <select id="pmt-freq" onchange="onFieldChange('invest')">
+              <option value="12">月繳</option>
+              <option value="4">季繳</option>
+              <option value="2">半年繳</option>
+              <option value="1">年繳</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-summary visible" id="summary-periodic">
+          <div class="sum-row">
+            <span>總期數：</span>
+            <span class="sum-value" id="sum-total-periods">—</span>
+          </div>
+          <div class="sum-row" style="margin-top:4px">
+            <span>總投入：</span>
+            <span class="sum-value" id="sum-total-invest">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card B: IRR ── -->
+    <div class="data-card" id="card-irr">
+      <div class="card-header">
+        <div class="card-label" id="label-irr">B</div>
+        <div class="card-title" id="card-b-title">年化報酬率 (IRR)</div>
+        <span class="card-status status-empty" id="status-irr">未填入</span>
+      </div>
+      <div class="field-group">
+        <label>年化報酬率（每年）</label>
+        <div class="input-wrap">
+          <input type="number" id="irr-value" placeholder="0.00" step="0.01" oninput="onFieldChange('irr')" style="padding-left:12px">
+          <span class="input-suffix">% / 年</span>
+          <button class="clear-btn" onclick="clearField('irr-value', 'irr')" title="清除">✕</button>
+        </div>
+      </div>
+      <div class="card-summary visible" id="summary-irr-info">
+        <div class="sum-row">
+          <span>月化報酬率：</span>
+          <span class="sum-value" id="sum-monthly-rate">—</span>
+        </div>
+        <div class="sum-row" style="margin-top:4px">
+          <span>翻倍年數（Rule 72）：</span>
+          <span class="sum-value" id="sum-rule72">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Card C: Return ── -->
+    <div class="data-card" id="card-return">
+      <div class="card-header">
+        <div class="card-label" id="label-return">C</div>
+        <div class="card-title" id="card-c-title">最終報酬</div>
+        <span class="card-status status-empty" id="status-return">未填入</span>
+      </div>
+      <div class="field-group">
+        <label>期末總值（含本金）</label>
+        <div class="input-wrap">
+          <span class="input-prefix" id="prefix-return">$</span>
+          <input type="number" id="return-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('return')">
+          <button class="clear-btn" onclick="clearField('return-amount', 'return')" title="清除">✕</button>
+        </div>
+      </div>
+      <div class="card-summary" id="summary-return">
+        <div class="sum-row">
+          <span>損益：</span>
+          <span class="sum-value" id="sum-profit">—</span>
+        </div>
+        <div class="sum-row" style="margin-top:4px">
+          <span>報酬率：</span>
+          <span class="sum-value" id="sum-simple-return">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ ACTION AREA ══ -->
+  <div class="action-area">
+    <div class="calc-hint" id="calc-hint">
+      <div class="hint-dot" id="hint-dot"></div>
+      <span id="hint-text">請填入任意兩項數據，第三項將自動推算</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="calc-btn" id="calc-btn" onclick="calculate()">
+        <span class="btn-icon">⚡</span>
+        立即計算
+      </button>
+      <button class="reset-btn" onclick="resetAll()">↺ 重置</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULT AREA ══ -->
+  <div class="result-area" id="result-area">
+    <div class="result-header">
+      <div class="result-header-icon">✅</div>
+      <div class="result-header-text">
+        <h3>計算完成</h3>
+        <p id="result-sub">推算結果如下</p>
+      </div>
+    </div>
+    <div class="result-body">
+      <div class="result-main">
+        <div>
+          <div class="result-label" id="result-label">年化報酬率 (IRR)</div>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px">
+            <div class="result-big" id="result-big">—</div>
+            <div class="result-unit" id="result-unit">%</div>
+          </div>
+        </div>
+      </div>
+      <div class="result-desc" id="result-desc"></div>
+      <div class="result-breakdown" id="result-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-label" id="bd-lbl-invest">總投入本金</div>
+          <div class="breakdown-value" id="bd-invest">—</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label" id="bd-lbl-return">期末總值</div>
+          <div class="breakdown-value primary" id="bd-return">—</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label" id="bd-lbl-profit">投資收益</div>
+          <div class="breakdown-value highlight" id="bd-profit">—</div>
+        </div>
+        <div class="breakdown-item" id="bd-convert-item" style="display:none">
+          <div class="breakdown-label" id="bd-lbl-convert">換算金額</div>
+          <div class="breakdown-value" id="bd-convert" style="color:var(--gold)">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let mode = 'single'; // 'single' | 'periodic'
+let filledFields = { invest: false, return: false, irr: false };
+
+// ── Currency helpers ──────────────────────
+function getCurrencySymbol() {
+  const sel = document.getElementById('currency');
+  const opt = sel.selectedOptions[0];
+  return opt.dataset.symbol || '$';
+}
+
+function updateCurrencyDisplay() {
+  const sym = getCurrencySymbol();
+  ['prefix-single','prefix-periodic','prefix-return'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = sym;
+  });
+  updateSummaries();
+}
+
+// ── Format number ─────────────────────────
+function fmt(n, decimals = 0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtMoney(n) {
+  const sym = getCurrencySymbol();
+  if (n === null || isNaN(n)) return '—';
+  if (Math.abs(n) >= 1e8) return sym + fmt(n/1e8, 2) + ' 億';
+  if (Math.abs(n) >= 1e4) return sym + fmt(n/1e4, 2) + ' 萬';
+  return sym + fmt(n, 0);
+}
+
+// ── Mode switching ───────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-single').classList.toggle('active', m === 'single');
+  document.getElementById('btn-periodic').classList.toggle('active', m === 'periodic');
+  document.getElementById('single-mode-invest').classList.toggle('hidden', m !== 'single');
+  document.getElementById('periodic-mode-invest').classList.toggle('hidden', m !== 'periodic');
+  filledFields.invest = false;
+  updateCardState('invest');
+  updateHint();
+  hideResult();
+  clearError();
+  updateSummaries();
+}
+
+// ── Field state ──────────────────────────
+function onFieldChange(card) {
+  const val = getCardValue(card);
+  filledFields[card] = (val !== null);
+  updateCardState(card);
+  updateHint();
+  clearError();
+  if (card !== 'irr') hideResult();
+  updateSummaries();
+}
+
+function clearField(inputId, card) {
+  const el = document.getElementById(inputId);
+  if (el) { el.value = ''; el.classList.remove('result-value'); }
+  // Also clear paired fields
+  if (card === 'invest') {
+    const ids = mode === 'single'
+      ? ['single-amount','single-years']
+      : ['pmt-amount','pmt-years'];
+    ids.forEach(id => {
+      const e = document.getElementById(id);
+      if (e) { e.value = ''; e.classList.remove('result-value'); }
+    });
+  }
+  if (card === 'return') {
+    const e = document.getElementById('return-amount');
+    if (e) { e.value = ''; e.classList.remove('result-value'); }
+  }
+  if (card === 'irr') {
+    const e = document.getElementById('irr-value');
+    if (e) { e.value = ''; e.classList.remove('result-value'); }
+  }
+  filledFields[card] = false;
+  updateCardState(card);
+  updateHint();
+  hideResult();
+  clearError();
+  updateSummaries();
+}
+
+function resetAll() {
+  ['single-amount','single-years','pmt-amount','pmt-years','return-amount','irr-value'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('result-value'); }
+  });
+  filledFields = { invest: false, return: false, irr: false };
+  ['invest','return','irr'].forEach(updateCardState);
+  updateHint();
+  hideResult();
+  clearError();
+  updateSummaries();
+}
+
+// ── Get card value ────────────────────────
+function getCardValue(card) {
+  if (card === 'invest') {
+    if (mode === 'single') {
+      const amt = parseFloat(document.getElementById('single-amount').value);
+      const yrs = parseFloat(document.getElementById('single-years').value);
+      if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1) return { amount: amt, years: yrs };
+      return null;
+    } else {
+      const pmt = parseFloat(document.getElementById('pmt-amount').value);
+      const yrs = parseFloat(document.getElementById('pmt-years').value);
+      const freq = parseInt(document.getElementById('pmt-freq').value);
+      if (!isNaN(pmt) && pmt > 0 && !isNaN(yrs) && yrs >= 1) return { pmt, years: yrs, freq };
+      return null;
+    }
+  }
+  if (card === 'return') {
+    const v = parseFloat(document.getElementById('return-amount').value);
+    return (!isNaN(v) && v > 0) ? v : null;
+  }
+  if (card === 'irr') {
+    const v = parseFloat(document.getElementById('irr-value').value);
+    return (!isNaN(v)) ? v / 100 : null; // store as decimal
+  }
+  return null;
+}
+
+// ── Card visual state ─────────────────────
+function updateCardState(card) {
+  const card_el = document.getElementById('card-' + card);
+  const status_el = document.getElementById('status-' + card);
+  const label_el = document.getElementById('label-' + card);
+  const filled = filledFields[card];
+  card_el.classList.toggle('has-data', filled);
+  card_el.classList.remove('calculated');
+  if (filled) {
+    status_el.className = 'card-status status-filled';
+    status_el.textContent = t('statusFilled');
+  } else {
+    status_el.className = 'card-status status-empty';
+    status_el.textContent = t('statusEmpty');
+  }
+}
+
+function setCardCalculated(card, value) {
+  const card_el = document.getElementById('card-' + card);
+  const status_el = document.getElementById('status-' + card);
+  card_el.classList.remove('has-data');
+  card_el.classList.add('calculated');
+  status_el.className = 'card-status status-result';
+  status_el.textContent = t('statusResult');
+}
+
+// ── Hint logic ───────────────────────────
+function updateHint() {
+  const count = Object.values(filledFields).filter(Boolean).length;
+  const dot = document.getElementById('hint-dot');
+  const text = document.getElementById('hint-text');
+  const btn = document.getElementById('calc-btn');
+
+  const L = T[lang];
+  if (count === 0) {
+    dot.className = 'hint-dot';
+    text.textContent = L.hintEmpty;
+    btn.disabled = true;
+  } else if (count === 1) {
+    dot.className = 'hint-dot partial';
+    const missing = Object.keys(filledFields).filter(k => !filledFields[k]);
+    text.textContent = L.hintPartial(missing.map(k => L.cardNames[k]).join('、'));
+    btn.disabled = true;
+  } else if (count === 2) {
+    dot.className = 'hint-dot ready';
+    const empty = Object.keys(filledFields).find(k => !filledFields[k]);
+    text.textContent = L.hintReady(L.cardNames[empty]);
+    btn.disabled = false;
+  } else {
+    dot.className = 'hint-dot partial';
+    text.textContent = L.hintAllFilled;
+    btn.disabled = false;
+  }
+}
+
+// ── Summaries update ─────────────────────
+function updateSummaries() {
+  const sym = getCurrencySymbol();
+
+  // Invest summary
+  if (mode === 'single') {
+    const amt = parseFloat(document.getElementById('single-amount').value);
+    const yrs = parseFloat(document.getElementById('single-years').value);
+    const el = document.getElementById('sum-single-total');
+    const summary = document.getElementById('summary-single');
+    if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1) {
+      el.textContent = sym + fmt(amt * yrs);          // 總投入 = 每年金額 × 年期
+      document.getElementById('sum-single-periods').textContent = Math.round(yrs) + ' 年';
+      summary.classList.add('visible');
+    } else if (!isNaN(amt) && amt > 0) {
+      el.textContent = sym + fmt(amt) + ' × ?年';
+      document.getElementById('sum-single-periods').textContent = '—';
+      summary.classList.add('visible');
+    } else {
+      summary.classList.remove('visible');
+    }
+    document.getElementById('summary-periodic').classList.remove('visible');
+  } else {
+    const pmt = parseFloat(document.getElementById('pmt-amount').value);
+    const yrs = parseFloat(document.getElementById('pmt-years').value);
+    const freq = parseInt(document.getElementById('pmt-freq').value);
+    const summary = document.getElementById('summary-periodic');
+    if (!isNaN(pmt) && !isNaN(yrs)) {
+      const n = Math.round(yrs * freq);
+      document.getElementById('sum-total-periods').textContent = n + ' 期';
+      document.getElementById('sum-total-invest').textContent = sym + fmt(pmt * n);
+      summary.classList.add('visible');
+    } else {
+      summary.classList.remove('visible');
+    }
+  }
+
+  // Return summary
+  const fv = parseFloat(document.getElementById('return-amount').value);
+  const rSummary = document.getElementById('summary-return');
+  if (!isNaN(fv) && fv > 0) {
+    // Try to compute profit if invest is filled
+    const inv = getCardValue('invest');
+    let totalInvested = null;
+    if (inv) {
+      if (mode === 'single') totalInvested = inv.amount * Math.round(inv.years); // 每年金額 × 年期
+      else totalInvested = inv.pmt * Math.round(inv.years * inv.freq);
+    }
+    if (totalInvested !== null) {
+      const profit = fv - totalInvested;
+      const pct = (profit / totalInvested * 100).toFixed(1);
+      document.getElementById('sum-profit').textContent = (profit >= 0 ? '+' : '') + sym + fmt(profit) + ` (${pct}%)`;
+      document.getElementById('sum-simple-return').textContent = (profit >= 0 ? '+' : '') + pct + '%';
+      rSummary.classList.add('visible');
+    } else {
+      rSummary.classList.remove('visible');
+    }
+  } else {
+    rSummary.classList.remove('visible');
+  }
+
+  // IRR summary
+  const irrVal = parseFloat(document.getElementById('irr-value').value);
+  if (!isNaN(irrVal) && irrVal !== 0) {
+    const monthly = ((Math.pow(1 + irrVal/100, 1/12) - 1) * 100).toFixed(4);
+    const r72 = (72 / irrVal).toFixed(1);
+    document.getElementById('sum-monthly-rate').textContent = monthly + '%';
+    document.getElementById('sum-rule72').textContent = r72 + ' 年';
+  } else {
+    document.getElementById('sum-monthly-rate').textContent = '—';
+    document.getElementById('sum-rule72').textContent = '—';
+  }
+}
+
+// ── IRR Newton-Raphson ───────────────────
+function calcIRR(cashFlows, guess = 0.1) {
+  // Try multiple starting points
+  const guesses = [0.05, 0.1, 0.15, 0.2, 0.3, -0.05, 0.5, 0.01];
+  for (let g of guesses) {
+    const r = _irrIter(cashFlows, g);
+    if (r !== null && isFinite(r) && r > -0.9999) return r;
+  }
+  return null;
+}
+
+function _irrIter(cashFlows, r0) {
+  let r = r0;
+  for (let i = 0; i < 200; i++) {
+    let f = 0, df = 0;
+    for (let t = 0; t < cashFlows.length; t++) {
+      const pv = Math.pow(1 + r, -t);
+      f  += cashFlows[t] * pv;
+      df -= t * cashFlows[t] * pv / (1 + r);
+    }
+    if (Math.abs(df) < 1e-20) return null;
+    const rNew = r - f / df;
+    if (!isFinite(rNew)) return null;
+    if (Math.abs(rNew - r) < 1e-9) return rNew;
+    r = rNew;
+  }
+  return r;
+}
+
+// ── Build cash flows ─────────────────────
+function buildCashFlows(invest, fv) {
+  if (mode === 'single') {
+    // 每年定額投入 amt，年末收款；最後一期同時繳款並領回 FV
+    const { amount: amt, years } = invest;
+    const n = Math.round(years);
+    const flows = new Array(n + 1).fill(0);
+    for (let t = 1; t <= n; t++) flows[t] = -amt;  // 每年年末付款
+    flows[n] += fv;                                  // 第 n 年年末領回
+    return flows;
+  } else {
+    // Ordinary annuity: pay PMT at end of each period, receive FV at last period
+    const { pmt: PMT, years, freq } = invest;
+    const n = Math.round(years * freq); // total periods
+    const flows = new Array(n + 1).fill(0);
+    for (let t = 1; t <= n; t++) flows[t] = -PMT;
+    flows[n] += fv; // net at last period
+    return flows;
+  }
+}
+
+// ── FV from IRR (annuity or single) ──────
+function calcFV(invest, r_annual) {
+  if (mode === 'single') {
+    // 年金公式：每年末投入 amt，共 n 年
+    const { amount: amt, years } = invest;
+    const n = Math.round(years);
+    if (Math.abs(r_annual) < 1e-12) return amt * n;
+    return amt * (Math.pow(1 + r_annual, n) - 1) / r_annual;
+  } else {
+    const { pmt: PMT, years, freq } = invest;
+    const n = Math.round(years * freq);
+    const r = Math.pow(1 + r_annual, 1 / freq) - 1; // rate per period
+    if (Math.abs(r) < 1e-12) return PMT * n; // r ≈ 0
+    return PMT * (Math.pow(1 + r, n) - 1) / r;
+  }
+}
+
+// ── PMT from IRR & FV ────────────────────
+function calcPMT(fv, r_annual, years, freq) {
+  const n = Math.round(years * freq);
+  const r = Math.pow(1 + r_annual, 1 / freq) - 1;
+  if (Math.abs(r) < 1e-12) return fv / n;
+  return fv * r / (Math.pow(1 + r, n) - 1);
+}
+
+// ── P from IRR & FV (single) ─────────────
+function calcP(fv, r_annual, years) {
+  return fv / Math.pow(1 + r_annual, years);
+}
+
+// ── MAIN CALCULATE ───────────────────────
+function calculate() {
+  clearError();
+  const count = Object.values(filledFields).filter(Boolean).length;
+
+  if (count < 2) {
+    showError(t('errFillTwo'));
+    return;
+  }
+
+  const invest = getCardValue('invest');
+  const fv = getCardValue('return');
+  const r_annual = getCardValue('irr'); // decimal
+  const sym = getCurrencySymbol();
+
+  // Determine what to calculate
+  const empty = Object.keys(filledFields).find(k => !filledFields[k]);
+
+  try {
+    if (empty === 'irr' || count === 3) {
+      // Calculate IRR
+      if (!invest || fv === null) { showError(t('errNeedAC')); return; }
+      const flows = buildCashFlows(invest, fv);
+      const r = calcIRR(flows);
+      if (r === null || !isFinite(r)) { showError(t('errNoConverge')); return; }
+      const pct = (r * 100).toFixed(4);
+      const el = document.getElementById('irr-value');
+      el.value = pct;
+      el.classList.add('result-value');
+      filledFields.irr = true;
+      setCardCalculated('irr');
+      showResult('irr', r * 100, invest, fv);
+      updateSummaries();
+
+    } else if (empty === 'return') {
+      // Calculate FV
+      if (!invest || r_annual === null) { showError(t('errNeedAB')); return; }
+      const fvCalc = calcFV(invest, r_annual);
+      if (!isFinite(fvCalc) || fvCalc <= 0) { showError(t('errAbnormal')); return; }
+      const el = document.getElementById('return-amount');
+      el.value = fvCalc.toFixed(2);
+      el.classList.add('result-value');
+      filledFields.return = true;
+      setCardCalculated('return');
+      showResult('return', fvCalc, invest, fvCalc);
+      updateSummaries();
+
+    } else if (empty === 'invest') {
+      // Calculate investment
+      if (fv === null || r_annual === null) { showError(t('errNeedBC')); return; }
+
+      if (mode === 'single') {
+        // 需要年期 — 用年金 PMT 公式反推每年投入金額
+        const yrs = parseFloat(document.getElementById('single-years').value);
+        if (isNaN(yrs) || yrs < 1) { showError(t('errYearsS')); return; }
+        const n = Math.round(yrs);
+        const amt = (Math.abs(r_annual) < 1e-12) ? fv / n : fv * r_annual / (Math.pow(1 + r_annual, n) - 1);
+        if (!isFinite(amt) || amt <= 0) { showError(t('errAbnormal')); return; }
+        const el = document.getElementById('single-amount');
+        el.value = amt.toFixed(2);
+        el.classList.add('result-value');
+        filledFields.invest = true;
+        setCardCalculated('invest');
+        showResult('invest', amt, { amount: amt, years: yrs }, fv);
+        updateSummaries();
+      } else {
+        const yrs = parseFloat(document.getElementById('pmt-years').value);
+        const freq = parseInt(document.getElementById('pmt-freq').value);
+        if (isNaN(yrs) || yrs < 1) { showError(t('errYearsP')); return; }
+        const PMT = calcPMT(fv, r_annual, yrs, freq);
+        if (!isFinite(PMT) || PMT <= 0) { showError(t('errAbnormal')); return; }
+        const el = document.getElementById('pmt-amount');
+        el.value = PMT.toFixed(2);
+        el.classList.add('result-value');
+        filledFields.invest = true;
+        setCardCalculated('invest');
+        const freqLabels = {12:'月',4:'季',2:'半年',1:'年'};
+        showResult('invest', PMT, { pmt: PMT, years: yrs, freq }, fv);
+        updateSummaries();
+      }
+    }
+  } catch(e) {
+    showError(t('errGeneral') + e.message);
+  }
+}
+
+// ── Show Result ───────────────────────────
+function showResult(calcType, calcValue, invest, fv) {
+  const sym = getCurrencySymbol();
+  const resultArea = document.getElementById('result-area');
+  resultArea.classList.add('visible');
+
+  // Compute total invested
+  let totalInvested = 0;
+  if (mode === 'single') {
+    totalInvested = invest.amount * Math.round(invest.years); // 每年投入 × 年期
+  } else {
+    totalInvested = invest.pmt * Math.round(invest.years * invest.freq);
+  }
+  const profit = fv - totalInvested;
+
+  if (calcType === 'irr') {
+    document.getElementById('result-label').textContent = t('resLabelIrr');
+    document.getElementById('result-big').textContent = calcValue.toFixed(4);
+    document.getElementById('result-unit').textContent = t('resUnitIrr');
+    const r72 = calcValue !== 0 ? (72 / calcValue).toFixed(1) : '—';
+    document.getElementById('result-desc').textContent = t('resDescIrr')(calcValue.toFixed(4), r72);
+    document.getElementById('result-sub').textContent = t('resSubIrr');
+  } else if (calcType === 'return') {
+    document.getElementById('result-label').textContent = t('resLabelReturn');
+    document.getElementById('result-big').textContent = fmt(fv, 0);
+    document.getElementById('result-unit').textContent = sym;
+    document.getElementById('result-desc').textContent = t('resDescReturn')(sym, fmt(fv,0), fmt(profit,0));
+    document.getElementById('result-sub').textContent = t('resSubReturn');
+  } else if (calcType === 'invest') {
+    document.getElementById('result-label').textContent = mode === 'single' ? t('resLabelInvestS') : t('resLabelInvestP');
+    document.getElementById('result-big').textContent = fmt(calcValue, 0);
+    document.getElementById('result-unit').textContent = sym;
+    const periods = mode === 'single' ? Math.round(invest.years) : Math.round(invest.years * invest.freq);
+    document.getElementById('result-desc').textContent = mode === 'single'
+      ? t('resDescInvestS')(sym, fmt(calcValue,0), Math.round(invest.years), fmt(fv,0))
+      : t('resDescInvestP')(sym, fmt(calcValue,0), periods, fmt(fv,0));
+    document.getElementById('result-sub').textContent = t('resSubInvest');
+  }
+
+  document.getElementById('bd-invest').textContent = sym + fmt(totalInvested, 0);
+  document.getElementById('bd-return').textContent = sym + fmt(fv, 0);
+  const profitStr = (profit >= 0 ? '+' : '') + sym + fmt(profit, 0) +
+    ' (' + (profit >= 0 ? '+' : '') + (totalInvested > 0 ? (profit/totalInvested*100).toFixed(1) : '0') + '%)';
+  document.getElementById('bd-profit').textContent = profitStr;
+  document.getElementById('bd-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // 換算金額
+  lastResultFV = fv;
+  showConvertRow(fv);
+}
+
+function hideResult() {
+  document.getElementById('result-area').classList.remove('visible');
+}
+
+// ── Error handling ───────────────────────
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  document.getElementById('error-text').textContent = msg;
+  el.classList.add('visible');
+}
+function clearError() {
+  document.getElementById('error-msg').classList.remove('visible');
+}
+
+// ══════════════════════════════════════════
+//  I18N
+// ══════════════════════════════════════════
+let lang = 'zh';
+
+const T = {
+  zh: {
+    subtitle: 'Internal Rate of Return 年化報酬率計算器',
+    langBtn: 'EN',
+    lblCurrency: '💱 貨幣',
+    lblConvert: '🔄 換算至',
+    lblMethod: '📅 投資方式',
+    modeSingle: '單筆投資', modePeriodic: '定期定額',
+    cardATitle: '投資輸入', cardBTitle: '年化報酬率 (IRR)', cardCTitle: '最終報酬',
+    lblAnnualAmt: '每年投入金額', lblPeriodicAmt: '每期投入金額',
+    statusFilled: '已填入', statusEmpty: '未填入', statusResult: '已推算',
+    hintEmpty: '請填入任意兩項數據，第三項將自動推算',
+    hintAllFilled: '三項已填滿，請清除一項讓系統推算',
+    cardNames: { invest: '投資輸入', return: '最終報酬', irr: '年化報酬率(IRR)' },
+    hintReady: n => `準備就緒！將推算「${n}」`,
+    hintPartial: ns => `再填入一項（${ns}），即可計算`,
+    calcBtn: '⚡ 立即計算', resetBtn: '↺ 重置',
+    resultDone: '計算完成',
+    bdInvest: '總投入本金', bdReturn: '期末總值', bdProfit: '投資收益', bdConvert: '換算金額',
+    resSubIrr: '成功推算年化報酬率', resSubReturn: '成功推算期末總值', resSubInvest: '成功推算所需投入',
+    resLabelIrr: '📈 年化報酬率 (IRR)', resLabelReturn: '💰 期末總值',
+    resLabelInvestS: '💵 每年投入金額', resLabelInvestP: '💵 每期投入金額',
+    resUnitIrr: '% / 年',
+    resDescIrr: (pct,r72) => `年化報酬率 ${pct}%，資金翻倍約需 ${r72} 年（Rule 72）。`,
+    resDescReturn: (sym,fv,profit) => `期末總值 ${sym}${fv}，獲利 ${sym}${profit}。`,
+    resDescInvestS: (sym,amt,yrs,fv) => `每年投入 ${sym}${amt}，連續 ${yrs} 年，期末達 ${sym}${fv}。`,
+    resDescInvestP: (sym,amt,p,fv) => `每期投入 ${sym}${amt}，累積 ${p} 期，期末達 ${sym}${fv}。`,
+    errFillTwo: '請填入至少兩項數據！',
+    errNeedAC: '請填入「投資輸入」和「最終報酬」！',
+    errNeedAB: '請填入「投資輸入」和「年化報酬率」！',
+    errNeedBC: '請填入「最終報酬」和「年化報酬率」！',
+    errYearsS: '請填入「投資年期」以推算每年投入金額！',
+    errYearsP: '請填入「投資年期」以推算每期金額！',
+    errNoConverge: '無法收斂計算，請確認數值（期末總值應大於投入本金）',
+    errAbnormal: '計算結果異常，請確認數值',
+    errGeneral: '計算發生錯誤：',
+    rateLoading: '匯率載入中…', rateError: '匯率失敗 ↻',
+  },
+  en: {
+    subtitle: 'Internal Rate of Return Calculator',
+    langBtn: '中',
+    lblCurrency: '💱 Currency',
+    lblConvert: '🔄 Convert To',
+    lblMethod: '📅 Method',
+    modeSingle: 'Lump Sum', modePeriodic: 'Periodic DCA',
+    cardATitle: 'Investment', cardBTitle: 'Annual Return (IRR)', cardCTitle: 'Final Return',
+    lblAnnualAmt: 'Annual Investment', lblPeriodicAmt: 'Amount / Period',
+    statusFilled: 'Filled', statusEmpty: 'Empty', statusResult: 'Calculated',
+    hintEmpty: 'Fill any two fields — the third will be calculated',
+    hintAllFilled: 'All three filled. Clear one to recalculate.',
+    cardNames: { invest: 'Investment', return: 'Final Return', irr: 'IRR' },
+    hintReady: n => `Ready! Will calculate "${n}"`,
+    hintPartial: ns => `Fill one more (${ns}) to calculate`,
+    calcBtn: '⚡ Calculate', resetBtn: '↺ Reset',
+    resultDone: 'Calculation Complete',
+    bdInvest: 'Total Invested', bdReturn: 'Final Value', bdProfit: 'Gain / Loss', bdConvert: 'Converted',
+    resSubIrr: 'IRR calculated', resSubReturn: 'Final value calculated', resSubInvest: 'Investment calculated',
+    resLabelIrr: '📈 Annual Return (IRR)', resLabelReturn: '💰 Final Value',
+    resLabelInvestS: '💵 Annual Investment', resLabelInvestP: '💵 Amount / Period',
+    resUnitIrr: '% / yr',
+    resDescIrr: (pct,r72) => `Annual return ${pct}%. Money doubles in ~${r72} years (Rule 72).`,
+    resDescReturn: (sym,fv,profit) => `Final value ${sym}${fv}, profit ${sym}${profit}.`,
+    resDescInvestS: (sym,amt,yrs,fv) => `Invest ${sym}${amt}/yr for ${yrs} years → ${sym}${fv}.`,
+    resDescInvestP: (sym,amt,p,fv) => `Invest ${sym}${amt}/period for ${p} periods → ${sym}${fv}.`,
+    errFillTwo: 'Please fill in at least two fields!',
+    errNeedAC: 'Please fill "Investment" and "Final Return"!',
+    errNeedAB: 'Please fill "Investment" and "IRR"!',
+    errNeedBC: 'Please fill "Final Return" and "IRR"!',
+    errYearsS: 'Please enter "Investment Period" to calculate annual amount!',
+    errYearsP: 'Please enter "Investment Period" to calculate periodic amount!',
+    errNoConverge: 'Cannot converge. Final value should exceed total investment.',
+    errAbnormal: 'Abnormal result. Please check inputs.',
+    errGeneral: 'Calculation error: ',
+    rateLoading: 'Loading rates…', rateError: 'Rate failed ↻',
+  }
+};
+
+function t(key) { return T[lang][key]; }
+
+function toggleLang() {
+  lang = lang === 'zh' ? 'en' : 'zh';
+  applyLang();
+}
+
+function applyLang() {
+  const L = T[lang];
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.textContent = val; };
+  set('subtitle-text', L.subtitle);
+  set('lang-btn', L.langBtn);
+  set('lbl-currency', L.lblCurrency);
+  set('lbl-convert', L.lblConvert);
+  set('lbl-method', L.lblMethod);
+  set('btn-single', L.modeSingle);
+  set('btn-periodic', L.modePeriodic);
+  set('card-a-title', L.cardATitle);
+  set('card-b-title', L.cardBTitle);
+  set('card-c-title', L.cardCTitle);
+  set('lbl-annual-amt', L.lblAnnualAmt);
+  set('lbl-periodic-amt', L.lblPeriodicAmt);
+  set('calc-btn', L.calcBtn);
+  set('reset-btn', L.resetBtn);
+  set('result-sub', L.resultDone);
+  set('bd-lbl-invest', L.bdInvest);
+  set('bd-lbl-return', L.bdReturn);
+  set('bd-lbl-profit', L.bdProfit);
+  set('bd-lbl-convert', L.bdConvert);
+  // Card status labels
+  ['invest','return','irr'].forEach(card => {
+    const el = document.getElementById('status-' + card);
+    if (!el) return;
+    if (document.getElementById('card-' + card).classList.contains('calculated')) el.textContent = L.statusResult;
+    else if (filledFields[card]) el.textContent = L.statusFilled;
+    else el.textContent = L.statusEmpty;
+  });
+  updateHint();
+  updateRateDisplay();
+}
+
+// ══════════════════════════════════════════
+//  LIVE EXCHANGE RATES
+// ══════════════════════════════════════════
+let exchangeRates = {};   // { 'TWD': 31.5, 'EUR': 0.92, ... }
+let lastFetchBase = '';
+let lastResultFV = null;  // 記住最後計算的期末總值（原幣）
+
+function getCurrencyCode() {
+  return document.getElementById('currency').value;
+}
+function getConvertCode() {
+  return document.getElementById('convert-currency').value;
+}
+function getConvertSymbol() {
+  const sel = document.getElementById('convert-currency');
+  return sel.selectedOptions[0]?.dataset.symbol || '';
+}
+
+async function fetchRates() {
+  const base = getCurrencyCode();
+  const badge = document.getElementById('rate-badge');
+  badge.textContent = t('rateLoading');
+  badge.className = 'rate-badge loading';
+  try {
+    const res = await fetch(`https://api.frankfurter.app/latest?from=${base}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    exchangeRates = data.rates || {};
+    exchangeRates[base] = 1;
+    lastFetchBase = base;
+    updateRateDisplay();
+  } catch(e) {
+    exchangeRates = {};
+    badge.textContent = t('rateError');
+    badge.className = 'rate-badge error';
+  }
+}
+
+function updateRateDisplay() {
+  const badge = document.getElementById('rate-badge');
+  const base = getCurrencyCode();
+  const target = getConvertCode();
+  if (base === target) { badge.textContent = '—'; badge.className = 'rate-badge'; return; }
+  if (lastFetchBase !== base || !exchangeRates[target]) {
+    badge.textContent = t('rateLoading'); badge.className = 'rate-badge loading';
+    fetchRates(); return;
+  }
+  const rate = exchangeRates[target];
+  badge.textContent = `1 ${base} = ${rate >= 10 ? rate.toFixed(1) : rate.toFixed(4)} ${target}`;
+  badge.className = 'rate-badge';
+  // Refresh convert row in result if visible
+  if (lastResultFV !== null) showConvertRow(lastResultFV);
+}
+
+function showConvertRow(fv) {
+  const target = getConvertCode();
+  const base = getCurrencyCode();
+  const item = document.getElementById('bd-convert-item');
+  const el = document.getElementById('bd-convert');
+  if (base === target || !exchangeRates[target]) { item.style.display = 'none'; return; }
+  const rate = exchangeRates[target];
+  const sym = getConvertSymbol();
+  el.textContent = sym + fmt(fv * rate, 0) + ` ${target}`;
+  item.style.display = 'block';
+}
+
+function onCurrencyChange() {
+  updateCurrencyDisplay();
+  exchangeRates = {};
+  lastFetchBase = '';
+  updateRateDisplay();
+}
+
+// ── Init ─────────────────────────────────
+updateHint();
+updateCurrencyDisplay();
+applyLang();
+fetchRates();
+</script>
+
+</body>
+</html>
