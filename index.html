@@ -1557,26 +1557,55 @@ function getConvertSymbol() {
 }
 
 async function fetchRates() {
-  if (!showConverter) return;          // only fetch when panel is open
+  if (!showConverter) return;
   const base = getCurrencyCode();
   const badge = document.getElementById('rate-badge');
   badge.textContent = t('rateLoading');
   badge.className = 'rate-badge loading';
-  try {
-    const res = await fetch(`https://api.frankfurter.app/latest?from=${base}`);
+
+  // Try multiple APIs in order; first success wins
+  const tryFetch = async (url, parseRates) => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    exchangeRates = data.rates || {};
-    exchangeRates[base] = 1;
-    lastFetchBase = base;
-    updateRateDisplay();
-    updateConverter();
-  } catch(e) {
-    exchangeRates = {};
-    badge.textContent = t('rateError');
-    badge.className = 'rate-badge error';
-    document.getElementById('conv-rate-info').textContent = t('rateError');
+    return parseRates(data);
+  };
+
+  const sources = [
+    [
+      `https://api.frankfurter.app/latest?from=${base}`,
+      d => d.rates
+    ],
+    [
+      `https://open.er-api.com/v6/latest/${base}`,
+      d => d.rates
+    ],
+    [
+      `https://api.exchangerate-api.com/v4/latest/${base}`,
+      d => d.rates
+    ],
+  ];
+
+  for (const [url, parse] of sources) {
+    try {
+      const rates = await tryFetch(url, parse);
+      if (!rates || typeof rates !== 'object') continue;
+      exchangeRates = { ...rates };
+      exchangeRates[base] = 1;
+      lastFetchBase = base;
+      updateRateDisplay();
+      updateConverter();
+      return;
+    } catch (_) {
+      // try next source
+    }
   }
+
+  // All sources failed
+  exchangeRates = {};
+  badge.textContent = t('rateError');
+  badge.className = 'rate-badge error';
+  document.getElementById('conv-rate-info').textContent = t('rateError');
 }
 
 function updateRateDisplay() {
