@@ -477,6 +477,101 @@
     /* Hidden utility */
     .hidden { display: none !important; }
 
+    /* ── Period unit toggle (年/月) ── */
+    .period-unit-toggle {
+      display: flex;
+      border-left: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .period-unit-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      line-height: 1;
+    }
+    .period-unit-btn + .period-unit-btn { border-left: 1px solid var(--border); }
+    .period-unit-btn.active { background: var(--primary); color: #fff; }
+    .period-unit-btn:hover:not(.active) { background: var(--surface3); color: var(--text); }
+
+    /* ── View toggle button ── */
+    .view-toggle-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 11px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    .view-toggle-btn:hover { background: var(--surface3); color: var(--text); }
+    .view-toggle-btn.mobile-mode { background: var(--primary-glow); border-color: var(--primary); color: var(--accent); }
+
+    /* ── IRR layout: left=年化input, right=月化+翻倍 stacked ── */
+    .irr-layout {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .irr-stats-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 100px;
+    }
+    .irr-stat-box {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .irr-stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+    }
+    .irr-stat-val {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .irr-stat-val.monthly { color: var(--accent); }
+    .irr-stat-val.rule72  { color: var(--gold); }
+
+    /* ── Force mobile view ── */
+    body.force-mobile .data-grid { grid-template-columns: 1fr !important; }
+    body.force-mobile .controls-row { grid-template-columns: 1fr !important; }
+    body.force-mobile .controls-divider { width: 100% !important; height: 1px !important; }
+    body.force-mobile .result-breakdown { grid-template-columns: 1fr 1fr !important; }
+    body.force-mobile .result-big { font-size: 34px !important; }
+    body.force-mobile .main { max-width: 100% !important; padding: 12px !important; }
+    body.force-mobile .calc-btn { padding: 10px 32px !important; font-size: 14px !important; }
+    body.force-mobile .irr-layout { grid-template-columns: 1fr !important; }
+    body.force-mobile .irr-stats-col { flex-direction: row; }
+    @media (max-width: 800px) {
+      .irr-layout { grid-template-columns: 1fr !important; }
+      .irr-stats-col { flex-direction: row; }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 800px) {
       .data-grid { grid-template-columns: 1fr; }
@@ -489,6 +584,7 @@
     @media (max-width: 600px) {
       .controls-row { grid-template-columns: 1fr; }
       .controls-divider { width: 100%; height: 1px; }
+      .conv-toggle-btn { padding: 0 10px; font-size: 11px; }
     }
     @media (max-width: 460px) {
       .result-breakdown { grid-template-columns: 1fr; }
@@ -643,7 +739,7 @@
     <h1>IRR Sheet</h1>
     <p id="subtitle-text">Internal Rate of Return 年化報酬率計算器</p>
   </div>
-  <div class="header-badge">FINANCE TOOL</div>
+  <button class="view-toggle-btn" id="view-toggle-btn" onclick="toggleView()" title="切換手機/電腦視圖">📱 手機版</button>
   <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
 </header>
 
@@ -735,19 +831,24 @@
 
       <!-- Single mode -->
       <div id="single-mode-invest">
-        <div class="field-group">
-          <label id="lbl-annual-amt">每年投入金額</label>
-          <div class="input-wrap">
-            <span class="input-prefix" id="prefix-single">$</span>
-            <input type="number" id="single-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('invest')">
-            <button class="clear-btn" onclick="clearField('single-amount', 'invest')" title="清除">✕</button>
+        <div class="field-row">
+          <div class="field-group">
+            <label id="lbl-annual-amt">每年投入金額</label>
+            <div class="input-wrap">
+              <span class="input-prefix" id="prefix-single">$</span>
+              <input type="number" id="single-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('invest')">
+              <button class="clear-btn" onclick="clearField('single-amount', 'invest')" title="清除">✕</button>
+            </div>
           </div>
-        </div>
-        <div class="field-group">
-          <label>投資年期（年）</label>
-          <div class="input-wrap">
-            <input type="number" id="single-years" placeholder="10" min="1" max="50" step="1" oninput="onFieldChange('invest')" style="padding-left:12px">
-            <span class="input-suffix">年</span>
+          <div class="field-group">
+            <label id="lbl-single-period">投資年期</label>
+            <div class="input-wrap">
+              <input type="number" id="single-years" placeholder="10" min="1" step="1" oninput="onFieldChange('invest')" style="padding-left:12px">
+              <div class="period-unit-toggle">
+                <button class="period-unit-btn active" id="unit-yr" onclick="setPeriodUnit('yr')">年</button>
+                <button class="period-unit-btn" id="unit-mo" onclick="setPeriodUnit('mo')">月</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card-summary" id="summary-single">
@@ -810,22 +911,24 @@
         <div class="card-title" id="card-b-title">年化報酬率 (IRR)</div>
         <span class="card-status status-empty" id="status-irr">未填入</span>
       </div>
-      <div class="field-group">
-        <label>年化報酬率（每年）</label>
-        <div class="input-wrap">
-          <input type="number" id="irr-value" placeholder="0.00" step="0.01" oninput="onFieldChange('irr')" style="padding-left:12px">
-          <span class="input-suffix">% / 年</span>
-          <button class="clear-btn" onclick="clearField('irr-value', 'irr')" title="清除">✕</button>
+      <div class="irr-layout" id="summary-irr-info">
+        <div class="field-group">
+          <label>年化報酬率（每年）</label>
+          <div class="input-wrap">
+            <input type="number" id="irr-value" placeholder="0.00" step="0.01" oninput="onFieldChange('irr')" style="padding-left:12px">
+            <span class="input-suffix">% / 年</span>
+            <button class="clear-btn" onclick="clearField('irr-value', 'irr')" title="清除">✕</button>
+          </div>
         </div>
-      </div>
-      <div class="card-summary visible" id="summary-irr-info">
-        <div class="sum-row">
-          <span>月化報酬率：</span>
-          <span class="sum-value" id="sum-monthly-rate">—</span>
-        </div>
-        <div class="sum-row" style="margin-top:4px">
-          <span>翻倍年數（Rule 72）：</span>
-          <span class="sum-value" id="sum-rule72">—</span>
+        <div class="irr-stats-col">
+          <div class="irr-stat-box">
+            <div class="irr-stat-label">月化報酬率</div>
+            <div class="irr-stat-val monthly" id="sum-monthly-rate">—</div>
+          </div>
+          <div class="irr-stat-box">
+            <div class="irr-stat-label">翻倍年數</div>
+            <div class="irr-stat-val rule72" id="sum-rule72">—</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1014,6 +1117,7 @@ function resetAll() {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('result-value'); }
   });
+  setPeriodUnit('yr');   // reset to 年 mode
   filledFields = { invest: false, return: false, irr: false };
   ['invest','return','irr'].forEach(updateCardState);
   updateHint();
@@ -1027,8 +1131,8 @@ function getCardValue(card) {
   if (card === 'invest') {
     if (mode === 'single') {
       const amt = parseFloat(document.getElementById('single-amount').value);
-      const yrs = parseFloat(document.getElementById('single-years').value);
-      if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1) return { amount: amt, years: yrs };
+      const yrs = getSingleYears();
+      if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1/12) return { amount: amt, years: yrs };
       return null;
     } else {
       const pmt = parseFloat(document.getElementById('pmt-amount').value);
@@ -1111,15 +1215,20 @@ function updateSummaries() {
   // Invest summary
   if (mode === 'single') {
     const amt = parseFloat(document.getElementById('single-amount').value);
-    const yrs = parseFloat(document.getElementById('single-years').value);
+    const rawVal = parseFloat(document.getElementById('single-years').value);
+    const yrs = getSingleYears();
     const el = document.getElementById('sum-single-total');
     const summary = document.getElementById('summary-single');
-    if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1) {
-      el.textContent = sym + fmt(amt * yrs);          // 總投入 = 每年金額 × 年期
-      document.getElementById('sum-single-periods').textContent = Math.round(yrs) + ' 年';
+    const periodLabel = periodUnit === 'mo'
+      ? (isNaN(rawVal) ? '—' : Math.round(rawVal) + ' 月（' + (yrs).toFixed(1) + ' 年）')
+      : (isNaN(rawVal) ? '—' : Math.round(rawVal) + ' 年');
+    if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1/12) {
+      const totalInvest = periodUnit === 'mo' ? amt * Math.ceil(yrs) : amt * Math.round(yrs);
+      el.textContent = sym + fmt(totalInvest);
+      document.getElementById('sum-single-periods').textContent = periodLabel;
       summary.classList.add('visible');
     } else if (!isNaN(amt) && amt > 0) {
-      el.textContent = sym + fmt(amt) + ' × ?年';
+      el.textContent = sym + fmt(amt) + ' × ?';
       document.getElementById('sum-single-periods').textContent = '—';
       summary.classList.add('visible');
     } else {
@@ -1311,8 +1420,8 @@ function calculate() {
 
       if (mode === 'single') {
         // 需要年期 — 用年金 PMT 公式反推每年投入金額
-        const yrs = parseFloat(document.getElementById('single-years').value);
-        if (isNaN(yrs) || yrs < 1) { showError(t('errYearsS')); return; }
+        const yrs = getSingleYears();
+        if (isNaN(yrs) || yrs < 1/12) { showError(t('errYearsS')); return; }
         const n = Math.round(yrs);
         const amt = (Math.abs(r_annual) < 1e-12) ? fv / n : fv * r_annual / (Math.pow(1 + r_annual, n) - 1);
         if (!isFinite(amt) || amt <= 0) { showError(t('errAbnormal')); return; }
@@ -1453,6 +1562,7 @@ const T = {
     rateLoading: '匯率載入中…', rateError: '匯率失敗 ↻',
     convToggle: '⇄ 幣值換算',
     convPanelTitle: '幣值換算工具',
+    viewMobile: '📱 手機版', viewDesktop: '💻 電腦版',
   },
   en: {
     subtitle: 'Internal Rate of Return Calculator',
@@ -1492,10 +1602,50 @@ const T = {
     rateLoading: 'Loading rates…', rateError: 'Rate failed ↻',
     convToggle: '⇄ FX Convert',
     convPanelTitle: 'Currency Converter',
+    viewMobile: '📱 Mobile', viewDesktop: '💻 Desktop',
   }
 };
 
 function t(key) { return T[lang][key]; }
+
+// ── Period unit (年/月) ──────────────────
+let periodUnit = 'yr'; // 'yr' | 'mo'
+
+function setPeriodUnit(unit) {
+  periodUnit = unit;
+  document.getElementById('unit-yr').classList.toggle('active', unit === 'yr');
+  document.getElementById('unit-mo').classList.toggle('active', unit === 'mo');
+  const inp = document.getElementById('single-years');
+  if (unit === 'mo') {
+    inp.placeholder = '120';
+    inp.max = '600';
+  } else {
+    inp.placeholder = '10';
+    inp.max = '50';
+  }
+  onFieldChange('invest');
+}
+
+// 回傳年數（不論目前是年還是月模式）
+function getSingleYears() {
+  const val = parseFloat(document.getElementById('single-years').value);
+  if (isNaN(val) || val <= 0) return NaN;
+  return periodUnit === 'mo' ? val / 12 : val;
+}
+
+let forceMobile = false;
+function toggleView() {
+  forceMobile = !forceMobile;
+  document.body.classList.toggle('force-mobile', forceMobile);
+  const btn = document.getElementById('view-toggle-btn');
+  if (forceMobile) {
+    btn.textContent = '💻 電腦版';
+    btn.classList.add('mobile-mode');
+  } else {
+    btn.textContent = '📱 手機版';
+    btn.classList.remove('mobile-mode');
+  }
+}
 
 function toggleLang() {
   lang = lang === 'zh' ? 'en' : 'zh';
@@ -1526,6 +1676,9 @@ function applyLang() {
   set('bd-lbl-convert', L.bdConvert);
   set('conv-toggle-btn', L.convToggle);
   set('conv-panel-title', L.convPanelTitle);
+  // View toggle reflects current state
+  const vBtn = document.getElementById('view-toggle-btn');
+  if (vBtn) vBtn.textContent = forceMobile ? L.viewDesktop : L.viewMobile;
   // Card status labels
   ['invest','return','irr'].forEach(card => {
     const el = document.getElementById('status-' + card);
@@ -1734,6 +1887,18 @@ function updateConverter() {
 updateHint();
 updateCurrencyDisplay();
 applyLang();
+
+// 自動偵測手機或電腦，套用對應版面
+(function initViewMode() {
+  const isMobile = window.matchMedia('(max-width: 800px)').matches;
+  if (isMobile) {
+    forceMobile = true;
+    document.body.classList.add('force-mobile');
+    const btn = document.getElementById('view-toggle-btn');
+    const L = T[lang];
+    if (btn) { btn.textContent = L.viewDesktop; btn.classList.add('mobile-mode'); }
+  }
+})();
 </script>
 
 </body>
