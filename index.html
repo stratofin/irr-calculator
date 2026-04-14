@@ -557,16 +557,99 @@
     .irr-stat-val.monthly { color: var(--accent); }
     .irr-stat-val.rule72  { color: var(--gold); }
 
-    /* ── Force mobile view ── */
-    body.force-mobile .data-grid { grid-template-columns: 1fr !important; }
-    body.force-mobile .controls-row { grid-template-columns: 1fr !important; }
+    /* ══ MOBILE VIEW (force-mobile) ══ */
+
+    /* ── Layout ── */
+    body.force-mobile .main         { max-width: 100% !important; padding: 10px 12px !important; }
+    body.force-mobile .data-grid    { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+    /* ── Header ── */
+    body.force-mobile .header       { padding: 8px 14px !important; }
+    body.force-mobile .header-icon  { font-size: 20px !important; }
+    body.force-mobile .header-text h1 { font-size: 16px !important; }
+    body.force-mobile #subtitle-text  { display: none !important; }
+    body.force-mobile .view-toggle-btn { font-size: 10px !important; padding: 3px 8px !important; }
+    body.force-mobile .lang-btn       { font-size: 10px !important; padding: 3px 9px !important; }
+
+    /* ── Controls: 貨幣 + 投資方式 垂直排列 ── */
+    body.force-mobile .controls-wrapper { flex-direction: column !important; gap: 6px !important; margin-bottom: 10px !important; }
+    body.force-mobile .controls-row {
+      grid-template-columns: 1fr !important;
+      border-radius: var(--radius) !important;
+    }
     body.force-mobile .controls-divider { width: 100% !important; height: 1px !important; }
-    body.force-mobile .result-breakdown { grid-template-columns: 1fr 1fr !important; }
-    body.force-mobile .result-big { font-size: 34px !important; }
-    body.force-mobile .main { max-width: 100% !important; padding: 12px !important; }
-    body.force-mobile .calc-btn { padding: 10px 32px !important; font-size: 14px !important; }
-    body.force-mobile .irr-layout { grid-template-columns: 1fr !important; }
-    body.force-mobile .irr-stats-col { flex-direction: row; }
+    body.force-mobile .control-block   { padding: 9px 12px !important; }
+    body.force-mobile .control-block label { font-size: 10px !important; min-width: 50px !important; }
+    body.force-mobile .controls-row select { font-size: 13px !important; }
+    body.force-mobile .mode-btn        { font-size: 12px !important; padding: 7px 0 !important; }
+    body.force-mobile .conv-toggle-btn {
+      width: 100% !important;
+      padding: 9px 0 !important;
+      text-align: center !important;
+      font-size: 12px !important;
+      border-radius: var(--radius) !important;
+    }
+
+    /* ── Cards ── */
+    body.force-mobile .data-card        { padding: 12px 13px !important; }
+    body.force-mobile .card-title       { font-size: 13px !important; }
+    body.force-mobile .card-status      { font-size: 10px !important; }
+    body.force-mobile .field-group label { font-size: 10px !important; }
+    body.force-mobile .input-wrap input  { font-size: 14px !important; padding: 8px 8px !important; }
+    body.force-mobile .input-prefix,
+    body.force-mobile .input-suffix      { font-size: 12px !important; padding: 8px 8px !important; }
+    body.force-mobile .clear-btn         { padding: 8px 8px !important; font-size: 12px !important; }
+
+    /* ── Card A: 左右欄維持，但字體與間距優化 ── */
+    body.force-mobile .field-row        { gap: 6px !important; }
+
+    /* ── Card B: IRR layout 垂直堆疊，月化+翻倍橫排 ── */
+    body.force-mobile .irr-layout       { grid-template-columns: 1fr !important; gap: 6px !important; }
+    body.force-mobile .irr-stats-col    { flex-direction: row !important; gap: 6px !important; min-width: 0 !important; }
+    body.force-mobile .irr-stat-box     { padding: 7px 6px !important; flex: 1 !important; }
+    body.force-mobile .irr-stat-label   { font-size: 9px !important; }
+    body.force-mobile .irr-stat-val     { font-size: 14px !important; }
+
+    /* ── Calculate button: 全寬，方便點按 ── */
+    body.force-mobile .action-area      { margin-bottom: 12px !important; }
+    body.force-mobile .btn-row          { width: 100% !important; flex-direction: column !important; gap: 8px !important; }
+    body.force-mobile .calc-btn {
+      width: 100% !important;
+      padding: 13px 0 !important;
+      font-size: 15px !important;
+      justify-content: center !important;
+      border-radius: var(--radius) !important;
+    }
+    body.force-mobile .reset-btn        { width: 100% !important; text-align: center !important; padding: 10px 0 !important; }
+    body.force-mobile .calc-hint        { font-size: 11px !important; padding: 5px 12px !important; }
+
+    /* ── Result area ── */
+    body.force-mobile .result-header    { padding: 12px 16px !important; }
+    body.force-mobile .result-header-icon { font-size: 18px !important; }
+    body.force-mobile .result-header-text h3 { font-size: 14px !important; }
+    body.force-mobile .result-header-text p  { font-size: 11px !important; }
+    body.force-mobile .result-body      { padding: 14px 14px !important; }
+    body.force-mobile .result-big       { font-size: 36px !important; }
+    body.force-mobile .result-unit      { font-size: 16px !important; }
+    body.force-mobile .result-desc      { font-size: 12px !important; margin-bottom: 12px !important; }
+    body.force-mobile .result-breakdown {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px !important;
+    }
+    body.force-mobile .breakdown-item   { padding: 10px 10px !important; }
+    body.force-mobile .breakdown-label  { font-size: 10px !important; margin-bottom: 4px !important; }
+    body.force-mobile .breakdown-value  { font-size: 15px !important; }
+
+    /* ── Converter panel ── */
+    body.force-mobile .converter-panel  { padding: 10px 12px !important; margin-bottom: 10px !important; }
+    body.force-mobile .conv-amount-row  { flex-direction: column !important; gap: 6px !important; }
+    body.force-mobile .conv-amount-wrap { max-width: 100% !important; width: 100% !important; }
+    body.force-mobile .conv-eq          { text-align: center !important; }
+    body.force-mobile .conv-result-box  { width: 100% !important; justify-content: center !important; padding: 10px 14px !important; }
+    body.force-mobile .conv-result-num  { font-size: 22px !important; }
+
+    /* ── Summary inside card ── */
+    body.force-mobile .card-summary     { font-size: 11px !important; padding: 7px 10px !important; }
     @media (max-width: 800px) {
       .irr-layout { grid-template-columns: 1fr !important; }
       .irr-stats-col { flex-direction: row; }
