@@ -1073,6 +1073,21 @@ function setMode(m) {
 }
 
 // ── Field state ──────────────────────────
+let autoCalcTimer = null;
+
+// 清除自動計算填入的欄位（帶有 result-value class 的輸入框）
+function clearAutoCalcField(inputId, card) {
+  const el = document.getElementById(inputId);
+  if (el && el.classList.contains('result-value')) {
+    el.value = '';
+    el.classList.remove('result-value');
+    filledFields[card] = false;
+    updateCardState(card);
+    updateSummaries();
+    hideResult();
+  }
+}
+
 function onFieldChange(card) {
   const val = getCardValue(card);
   filledFields[card] = (val !== null);
@@ -1081,6 +1096,30 @@ function onFieldChange(card) {
   clearError();
   if (card !== 'irr') hideResult();
   updateSummaries();
+
+  // 當使用者修改某欄位時，若另一欄是「自動算出」的，先清除讓系統重新計算
+  if (card === 'invest' || card === 'irr') {
+    // A 或 B 有變動 → 清掉自動算出的 C（最終報酬）
+    clearAutoCalcField('return-amount', 'return');
+  }
+  if (card === 'invest' || card === 'return') {
+    // A 或 C 有變動 → 清掉自動算出的 B（IRR）
+    clearAutoCalcField('irr-value', 'irr');
+  }
+  if (card === 'irr' || card === 'return') {
+    // B 或 C 有變動 → 清掉自動算出的 A（投資輸入）
+    clearAutoCalcField('single-amount', 'invest');
+    clearAutoCalcField('pmt-amount', 'invest');
+  }
+
+  // 自動計算：任意兩欄填好後，延遲 700ms 自動執行
+  clearTimeout(autoCalcTimer);
+  const count = Object.values(filledFields).filter(Boolean).length;
+  if (count === 2) {
+    autoCalcTimer = setTimeout(() => {
+      calculate();
+    }, 700);
+  }
 }
 
 function clearField(inputId, card) {
@@ -1323,8 +1362,14 @@ function buildCashFlows(invest, fv) {
     const { amount: amt, years } = invest;
     const n = Math.round(years);
     const flows = new Array(n + 1).fill(0);
-    for (let t = 1; t <= n; t++) flows[t] = -amt;  // 每年年末付款
-    flows[n] += fv;                                  // 第 n 年年末領回
+    if (n === 1) {
+      // 1 年：期初投入，期末領回（單筆複利邏輯）
+      flows[0] = -amt;
+      flows[1] = fv;
+    } else {
+      for (let t = 1; t <= n; t++) flows[t] = -amt;  // 每年年末付款
+      flows[n] += fv;                                  // 第 n 年年末領回
+    }
     return flows;
   } else {
     // Ordinary annuity: pay PMT at end of each period, receive FV at last period
@@ -1340,10 +1385,11 @@ function buildCashFlows(invest, fv) {
 // ── FV from IRR (annuity or single) ──────
 function calcFV(invest, r_annual) {
   if (mode === 'single') {
-    // 年金公式：每年末投入 amt，共 n 年
     const { amount: amt, years } = invest;
     const n = Math.round(years);
     if (Math.abs(r_annual) < 1e-12) return amt * n;
+    // n=1：單筆投入複利成長；n≥2：年金公式（每年末投入）
+    if (n === 1) return amt * (1 + r_annual);
     return amt * (Math.pow(1 + r_annual, n) - 1) / r_annual;
   } else {
     const { pmt: PMT, years, freq } = invest;
@@ -1423,7 +1469,10 @@ function calculate() {
         const yrs = getSingleYears();
         if (isNaN(yrs) || yrs < 1/12) { showError(t('errYearsS')); return; }
         const n = Math.round(yrs);
-        const amt = (Math.abs(r_annual) < 1e-12) ? fv / n : fv * r_annual / (Math.pow(1 + r_annual, n) - 1);
+        // n=1：單筆複利反推；n≥2：年金公式反推
+        const amt = (Math.abs(r_annual) < 1e-12) ? fv / n
+          : n === 1 ? fv / (1 + r_annual)
+          : fv * r_annual / (Math.pow(1 + r_annual, n) - 1);
         if (!isFinite(amt) || amt <= 0) { showError(t('errAbnormal')); return; }
         const el = document.getElementById('single-amount');
         el.value = amt.toFixed(2);
@@ -1458,6 +1507,8 @@ function showResult(calcType, calcValue, invest, fv) {
   const sym = getCurrencySymbol();
   const resultArea = document.getElementById('result-area');
   resultArea.classList.add('visible');
+  // 自動捲動讓結果進入畫面
+  setTimeout(() => resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 
   // Compute total invested
   let totalInvested = 0;
@@ -1889,15 +1940,33 @@ updateCurrencyDisplay();
 applyLang();
 
 // 自動偵測手機或電腦，套用對應版面
-(function initViewMode() {
-  const isMobile = window.matchMedia('(max-width: 800px)').matches;
-  if (isMobile) {
-    forceMobile = true;
-    document.body.classList.add('force-mobile');
-    const btn = document.getElementById('view-toggle-btn');
-    const L = T[lang];
-    if (btn) { btn.textContent = L.viewDesktop; btn.classList.add('mobile-mode'); }
+function detectMobile() {
+  const smallScreen  = window.matchMedia('(max-width: 800px)').matches;
+  const portrait     = window.matchMedia('(orientation: portrait)').matches;
+  const hasTouch     = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const mobileAgent  = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+  // 直立螢幕 + 觸控，或手機 UA，或小螢幕 → 手機模式
+  return (portrait && hasTouch) || mobileAgent || smallScreen;
+}
+
+function applyViewMode(isMobile) {
+  forceMobile = isMobile;
+  document.body.classList.toggle('force-mobile', isMobile);
+  const btn = document.getElementById('view-toggle-btn');
+  const L = T[lang];
+  if (btn) {
+    btn.textContent = isMobile ? L.viewDesktop : L.viewMobile;
+    btn.classList.toggle('mobile-mode', isMobile);
   }
+}
+
+(function initViewMode() {
+  applyViewMode(detectMobile());
+
+  // 當裝置旋轉時重新判斷（直立↔橫式）
+  window.matchMedia('(orientation: portrait)').addEventListener('change', function() {
+    applyViewMode(detectMobile());
+  });
 })();
 </script>
 
