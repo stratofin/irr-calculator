@@ -1105,7 +1105,7 @@
           <div class="field-group">
             <label id="lbl-single-period">投資年期</label>
             <div class="input-wrap">
-              <input type="number" id="single-years" placeholder="10" min="1" step="1" oninput="onFieldChange('invest')" style="padding-left:12px">
+              <input type="number" id="single-years" placeholder="36" min="1" step="1" oninput="onFieldChange('invest')" style="padding-left:12px">
               <div class="period-unit-toggle">
                 <button class="period-unit-btn active" id="unit-yr" onclick="setPeriodUnit('yr')">年</button>
                 <button class="period-unit-btn" id="unit-mo" onclick="setPeriodUnit('mo')">月</button>
@@ -1946,10 +1946,10 @@ function setPeriodUnit(unit) {
   document.getElementById('unit-mo').classList.toggle('active', unit === 'mo');
   const inp = document.getElementById('single-years');
   if (unit === 'mo') {
-    inp.placeholder = '120';
+    inp.placeholder = '432';
     inp.max = '600';
   } else {
-    inp.placeholder = '10';
+    inp.placeholder = '36';
     inp.max = '50';
   }
   onFieldChange('invest');
