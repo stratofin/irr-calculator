@@ -406,24 +406,25 @@
     /* ── Result area ── */
     .result-area {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,105,160,0.35);
       border-radius: var(--radius);
       overflow: hidden;
       display: none;
+      box-shadow: 0 0 0 3px rgba(255,105,160,0.08);
     }
     .result-area.visible { display: block; }
 
     .result-header {
-      background: linear-gradient(135deg, #0a3b00 0%, #0d2b00 100%);
-      border-bottom: 1px solid rgba(63,185,80,0.3);
+      background: linear-gradient(135deg, #3a0020 0%, #2a0018 100%);
+      border-bottom: 1px solid rgba(255,105,160,0.3);
       padding: 16px 24px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
     .result-header-icon { font-size: 22px; }
-    .result-header-text h3 { font-size: 16px; font-weight: 700; color: var(--green); }
-    .result-header-text p { font-size: 12px; color: rgba(63,185,80,0.6); margin-top: 2px; }
+    .result-header-text h3 { font-size: 16px; font-weight: 700; color: #ff6fa8; }
+    .result-header-text p { font-size: 12px; color: rgba(255,105,160,0.6); margin-top: 2px; }
 
     .result-body { padding: 24px; }
     .result-main {
@@ -436,11 +437,11 @@
     .result-big {
       font-size: 42px;
       font-weight: 800;
-      color: var(--green);
+      color: #ff6fa8;
       letter-spacing: -1px;
       line-height: 1;
     }
-    .result-unit { font-size: 20px; color: var(--green); font-weight: 600; }
+    .result-unit { font-size: 20px; color: #ff6fa8; font-weight: 600; }
     .result-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
 
     .result-breakdown {
@@ -456,7 +457,7 @@
     }
     .breakdown-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
     .breakdown-value { font-size: 18px; font-weight: 700; color: var(--text); }
-    .breakdown-value.highlight { color: var(--green); }
+    .breakdown-value.highlight { color: #ff6fa8; }
     .breakdown-value.primary { color: var(--accent); }
 
     /* Error message */
@@ -774,6 +775,184 @@
     }
 
     /* ── Desktop large screen enhancements ── */
+    /* ══ MULTI-SCENARIO COMPARE ══ */
+    .compare-toggle-area {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+    }
+    .compare-toggle-btn {
+      background: var(--surface2);
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 24px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      width: 100%;
+      justify-content: center;
+    }
+    .compare-toggle-btn:hover { background: var(--surface3); border-color: var(--primary); color: var(--accent); }
+    .compare-toggle-btn.active { background: var(--primary-glow); border-color: var(--primary); color: var(--accent); border-style: solid; }
+
+    .compare-section {
+      margin-top: 14px;
+      animation: panelIn 0.2s ease;
+    }
+    .compare-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .compare-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .sc-add-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .sc-add-btn:hover { opacity: 0.85; }
+    .sc-add-btn:disabled { background: var(--surface3); color: var(--text-dim); cursor: not-allowed; }
+
+    /* Scenario grid */
+    .scenarios-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    /* Individual scenario card */
+    .scenario-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .scenario-card.sc-has-result { border-color: rgba(255,105,160,0.4); }
+
+    .sc-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sc-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .sc-label-1 { color: #58a6ff; }
+    .sc-label-2 { color: #f78166; }
+    .sc-label-3 { color: #d2a8ff; }
+    .sc-label-4 { color: #56d364; }
+
+    .sc-remove-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .sc-remove-btn:hover { color: var(--red); background: rgba(248,81,73,0.1); }
+
+    .sc-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    .sc-field label {
+      display: block;
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .sc-result-bar {
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 38px;
+    }
+    .sc-result-empty { font-size: 11px; color: var(--text-dim); width: 100%; text-align: center; }
+    .sc-fv-val { font-size: 16px; font-weight: 800; color: #ff6fa8; }
+    .sc-profit-val { font-size: 12px; font-weight: 600; }
+    .sc-profit-val.pos { color: #ff6fa8; }
+    .sc-profit-val.neg { color: var(--red); }
+
+    /* Comparison table */
+    .compare-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+    .compare-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .compare-table-wrap th {
+      background: var(--surface2);
+      padding: 9px 14px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .compare-table-wrap th:first-child { text-align: left; }
+    .compare-table-wrap td {
+      padding: 9px 14px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .compare-table-wrap td:first-child { text-align: left; color: var(--text-muted); font-size: 11px; }
+    .compare-table-wrap tr:last-child td { border-bottom: none; }
+    .compare-table-wrap td.best-fv { color: #ff6fa8; font-weight: 800; }
+    .compare-table-wrap td.best-profit { color: #ff6fa8; font-weight: 700; }
+    .compare-table-wrap td.neg-profit { color: var(--red); }
+    .compare-table-wrap .best-badge { font-size: 10px; display: block; color: #ff6fa8; }
+
+    /* Force-mobile overrides for compare */
+    body.force-mobile .sc-inputs { grid-template-columns: 1fr; gap: 6px; padding: 10px 12px; }
+    body.force-mobile .scenarios-grid { gap: 8px; }
+    body.force-mobile .sc-fv-val { font-size: 15px; }
+
     @media (min-width: 960px) {
       .main { max-width: 1240px; padding: 24px 40px; }
 
@@ -1100,6 +1279,22 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ══ MULTI-SCENARIO COMPARE ══ -->
+  <div class="compare-toggle-area">
+    <button class="compare-toggle-btn" id="compare-toggle-btn" onclick="toggleCompare()">
+      📊 多方案比較
+    </button>
+  </div>
+
+  <div class="compare-section" id="compare-section" style="display:none">
+    <div class="compare-section-header">
+      <span class="compare-section-title">📊 多方案比較</span>
+      <button class="sc-add-btn" id="sc-add-btn" onclick="addScenario()">＋ 新增方案</button>
+    </div>
+    <div class="scenarios-grid" id="scenarios-grid"></div>
+    <div id="compare-table-wrap"></div>
   </div>
 
 </div><!-- /main -->
@@ -1631,7 +1826,7 @@ function showResult(calcType, calcValue, invest, fv) {
   const profitStr = (profit >= 0 ? '+' : '') + sym + fmt(profit, 0) +
     ' (' + (profit >= 0 ? '+' : '') + (totalInvested > 0 ? (profit/totalInvested*100).toFixed(1) : '0') + '%)';
   document.getElementById('bd-profit').textContent = profitStr;
-  document.getElementById('bd-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('bd-profit').style.color = profit >= 0 ? '#ff6fa8' : 'var(--red)';
 
   // 換算金額
   lastResultFV = fv;
@@ -1761,8 +1956,11 @@ function setPeriodUnit(unit) {
 }
 
 // 回傳年數（不論目前是年還是月模式）
+// 若欄位空白，自動使用 placeholder 預設值（年: 10，月: 120）
 function getSingleYears() {
-  const val = parseFloat(document.getElementById('single-years').value);
+  const el = document.getElementById('single-years');
+  const raw = el.value.trim();
+  const val = raw !== '' ? parseFloat(raw) : parseFloat(el.placeholder);
   if (isNaN(val) || val <= 0) return NaN;
   return periodUnit === 'mo' ? val / 12 : val;
 }
@@ -2051,6 +2249,223 @@ function applyViewMode(isMobile) {
     applyViewMode(detectMobile());
   });
 })();
+
+// ══════════════════════════════════════════
+// MULTI-SCENARIO COMPARE
+// ══════════════════════════════════════════
+
+let scenarios = [];
+let scenarioCounter = 0;
+let compareOpen = false;
+
+const SC_COLORS = ['sc-label-1','sc-label-2','sc-label-3','sc-label-4'];
+
+function toggleCompare() {
+  compareOpen = !compareOpen;
+  const section = document.getElementById('compare-section');
+  const btn = document.getElementById('compare-toggle-btn');
+  section.style.display = compareOpen ? 'block' : 'none';
+  btn.classList.toggle('active', compareOpen);
+  if (compareOpen && scenarios.length === 0) {
+    addScenario();
+    addScenario();
+  }
+}
+
+function addScenario() {
+  if (scenarios.length >= 4) return;
+  scenarioCounter++;
+  scenarios.push({ id: scenarioCounter, amount: '', years: '', irr: '' });
+  renderScenarios();
+  document.getElementById('sc-add-btn').disabled = scenarios.length >= 4;
+}
+
+function removeScenario(id) {
+  scenarios = scenarios.filter(s => s.id !== id);
+  renderScenarios();
+  document.getElementById('sc-add-btn').disabled = scenarios.length >= 4;
+}
+
+function calcScenarioFV(amount, years, irr) {
+  const amt = parseFloat(amount);
+  const yrs = parseFloat(years);
+  const r   = parseFloat(irr) / 100;
+  if (isNaN(amt) || amt <= 0 || isNaN(yrs) || yrs <= 0 || isNaN(r)) return null;
+  const n = Math.round(yrs);
+  if (n === 1) return amt * (1 + r);
+  if (Math.abs(r) < 1e-12) return amt * n;
+  return amt * (Math.pow(1 + r, n) - 1) / r;
+}
+
+function onScenarioChange(id) {
+  const s = scenarios.find(s => s.id === id);
+  if (!s) return;
+  s.amount = document.getElementById('sc-amt-' + id).value;
+  s.years  = document.getElementById('sc-yrs-' + id).value;
+  s.irr    = document.getElementById('sc-irr-'  + id).value;
+  refreshScenarioResult(id);
+  renderCompareTable();
+}
+
+function refreshScenarioResult(id) {
+  const s = scenarios.find(s => s.id === id);
+  if (!s) return;
+  const sym = getCurrencySymbol();
+  const fv  = calcScenarioFV(s.amount, s.years, s.irr);
+  const bar = document.getElementById('sc-result-bar-' + id);
+  const card = document.getElementById('sc-card-' + id);
+  if (!bar) return;
+
+  if (fv !== null && isFinite(fv)) {
+    const amt  = parseFloat(s.amount);
+    const yrs  = parseFloat(s.years);
+    const n    = Math.round(yrs);
+    const invested = amt * n;
+    const profit   = fv - invested;
+    const pct      = invested > 0 ? (profit / invested * 100).toFixed(1) : '0';
+    bar.innerHTML  = `
+      <span class="sc-fv-val">${sym}${fmt(fv, 0)}</span>
+      <span class="sc-profit-val ${profit >= 0 ? 'pos' : 'neg'}">
+        ${profit >= 0 ? '+' : ''}${sym}${fmt(Math.abs(profit), 0)} (${profit >= 0 ? '+' : '-'}${Math.abs(parseFloat(pct)).toFixed(1)}%)
+      </span>`;
+    card && card.classList.add('sc-has-result');
+  } else {
+    bar.innerHTML = '<span class="sc-result-empty">填入三項數值即可試算</span>';
+    card && card.classList.remove('sc-has-result');
+  }
+}
+
+function renderScenarios() {
+  const grid = document.getElementById('scenarios-grid');
+  const sym  = getCurrencySymbol();
+  grid.innerHTML = scenarios.map((s, i) => {
+    const colorClass = SC_COLORS[i] || SC_COLORS[0];
+    const canRemove  = scenarios.length > 1;
+    return `
+    <div class="scenario-card" id="sc-card-${s.id}">
+      <div class="sc-card-header">
+        <span class="sc-label ${colorClass}">方案 ${i + 1}</span>
+        ${canRemove ? `<button class="sc-remove-btn" onclick="removeScenario(${s.id})" title="移除">✕ 移除</button>` : ''}
+      </div>
+      <div class="sc-inputs">
+        <div class="sc-field">
+          <label>每年投入</label>
+          <div class="input-wrap">
+            <span class="input-prefix">${sym}</span>
+            <input type="number" id="sc-amt-${s.id}" value="${s.amount}"
+              placeholder="10000" min="0" step="any"
+              oninput="onScenarioChange(${s.id})">
+          </div>
+        </div>
+        <div class="sc-field">
+          <label>年期</label>
+          <div class="input-wrap">
+            <input type="number" id="sc-yrs-${s.id}" value="${s.years}"
+              placeholder="10" min="1" step="1"
+              oninput="onScenarioChange(${s.id})" style="padding-left:10px">
+            <span class="input-suffix">年</span>
+          </div>
+        </div>
+        <div class="sc-field">
+          <label>年化報酬率</label>
+          <div class="input-wrap">
+            <input type="number" id="sc-irr-${s.id}" value="${s.irr}"
+              placeholder="8" step="0.1"
+              oninput="onScenarioChange(${s.id})" style="padding-left:10px">
+            <span class="input-suffix">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="sc-result-bar" id="sc-result-bar-${s.id}">
+        <span class="sc-result-empty">填入三項數值即可試算</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Re-populate values and results
+  scenarios.forEach(s => {
+    if (s.amount) document.getElementById('sc-amt-' + s.id).value = s.amount;
+    if (s.years)  document.getElementById('sc-yrs-' + s.id).value = s.years;
+    if (s.irr)    document.getElementById('sc-irr-'  + s.id).value = s.irr;
+    refreshScenarioResult(s.id);
+  });
+
+  renderCompareTable();
+}
+
+function renderCompareTable() {
+  const wrap = document.getElementById('compare-table-wrap');
+  if (scenarios.length < 2) { wrap.innerHTML = ''; return; }
+
+  const sym  = getCurrencySymbol();
+  const data = scenarios.map((s, i) => {
+    const fv  = calcScenarioFV(s.amount, s.years, s.irr);
+    const amt = parseFloat(s.amount);
+    const yrs = parseFloat(s.years);
+    const irr = parseFloat(s.irr);
+    const n   = (!isNaN(yrs) && yrs > 0) ? Math.round(yrs) : null;
+    const invested = (n && !isNaN(amt)) ? amt * n : null;
+    const profit   = (fv !== null && invested !== null) ? fv - invested : null;
+    return { label: `方案 ${i+1}`, fv, invested, profit, irr };
+  });
+
+  const fvValues     = data.map(d => d.fv).filter(v => v != null && isFinite(v));
+  const profitValues = data.map(d => d.profit).filter(v => v != null && isFinite(v));
+  const maxFV        = fvValues.length    ? Math.max(...fvValues)    : null;
+  const maxProfit    = profitValues.length ? Math.max(...profitValues) : null;
+
+  const fmtCell = (val, prefix) =>
+    val != null && isFinite(val) ? prefix + fmt(Math.abs(val), 0) : '—';
+
+  wrap.innerHTML = `
+    <div class="compare-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>指標</th>
+            ${data.map((d, i) => {
+              const isBest = d.fv != null && d.fv === maxFV && fvValues.length > 1;
+              return `<th class="${SC_COLORS[i]}">${d.label}${isBest ? '<span class="best-badge">🏆 最高報酬</span>' : ''}</th>`;
+            }).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>總投入本金</td>
+            ${data.map(d => `<td>${d.invested != null ? sym + fmt(d.invested, 0) : '—'}</td>`).join('')}
+          </tr>
+          <tr>
+            <td>最終報酬</td>
+            ${data.map(d => {
+              const isBest = d.fv != null && d.fv === maxFV && fvValues.length > 1;
+              return `<td class="${isBest ? 'best-fv' : ''}">${d.fv != null ? sym + fmt(d.fv, 0) : '—'}</td>`;
+            }).join('')}
+          </tr>
+          <tr>
+            <td>投資獲利</td>
+            ${data.map(d => {
+              const isBest = d.profit != null && d.profit === maxProfit && profitValues.length > 1;
+              const cls    = d.profit != null ? (d.profit < 0 ? 'neg-profit' : isBest ? 'best-profit' : '') : '';
+              const sign   = d.profit != null ? (d.profit >= 0 ? '+' : '-') : '';
+              return `<td class="${cls}">${d.profit != null ? sign + sym + fmt(Math.abs(d.profit), 0) : '—'}</td>`;
+            }).join('')}
+          </tr>
+          <tr>
+            <td>年化報酬率</td>
+            ${data.map(d => `<td>${!isNaN(d.irr) ? d.irr.toFixed(2) + '%' : '—'}</td>`).join('')}
+          </tr>
+          <tr>
+            <td>投報率</td>
+            ${data.map(d => {
+              if (d.profit == null || d.invested == null || d.invested <= 0) return '<td>—</td>';
+              const pct = (d.profit / d.invested * 100).toFixed(1);
+              return `<td class="${d.profit >= 0 ? '' : 'neg-profit'}">${d.profit >= 0 ? '+' : ''}${pct}%</td>`;
+            }).join('')}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
 </script>
 
 </body>
