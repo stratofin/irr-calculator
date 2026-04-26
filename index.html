@@ -500,6 +500,38 @@
     .period-unit-btn.active { background: var(--primary); color: #fff; }
     .period-unit-btn:hover:not(.active) { background: var(--surface3); color: var(--text); }
 
+    /* ── Amount unit toggle bar (元/萬 or $/K) ── */
+    .amount-unit-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .amount-unit-label { white-space: nowrap; }
+    .amount-unit-group {
+      display: flex;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .amount-unit-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+    .amount-unit-btn + .amount-unit-btn { border-left: 1px solid var(--border); }
+    .amount-unit-btn.active { background: var(--primary); color: #fff; }
+    .amount-unit-btn:hover:not(.active) { background: var(--surface3); color: var(--text); }
+
     /* ── View toggle button ── */
     .view-toggle-btn {
       background: var(--surface2);
@@ -1080,6 +1112,15 @@
     <span id="error-text">請確認輸入資料</span>
   </div>
 
+  <!-- ══ Amount unit toggle ══ -->
+  <div class="amount-unit-bar">
+    <span class="amount-unit-label" id="amount-unit-label">金額單位：</span>
+    <div class="amount-unit-group">
+      <button class="amount-unit-btn active" id="unit-yuan" onclick="setAmountUnit(1)">元</button>
+      <button class="amount-unit-btn" id="unit-wan" onclick="setAmountUnit(10000)">萬</button>
+    </div>
+  </div>
+
   <!-- ══ THREE DATA CARDS ══ -->
   <div class="data-grid">
 
@@ -1447,12 +1488,12 @@ function resetAll() {
 function getCardValue(card) {
   if (card === 'invest') {
     if (mode === 'single') {
-      const amt = parseFloat(document.getElementById('single-amount').value);
+      const amt = parseFloat(document.getElementById('single-amount').value) * amountUnit;
       const yrs = getSingleYears();
       if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs >= 1/12) return { amount: amt, years: yrs };
       return null;
     } else {
-      const pmt = parseFloat(document.getElementById('pmt-amount').value);
+      const pmt = parseFloat(document.getElementById('pmt-amount').value) * amountUnit;
       const yrs = parseFloat(document.getElementById('pmt-years').value);
       const freq = parseInt(document.getElementById('pmt-freq').value);
       if (!isNaN(pmt) && pmt > 0 && !isNaN(yrs) && yrs >= 1) return { pmt, years: yrs, freq };
@@ -1460,7 +1501,7 @@ function getCardValue(card) {
     }
   }
   if (card === 'return') {
-    const v = parseFloat(document.getElementById('return-amount').value);
+    const v = parseFloat(document.getElementById('return-amount').value) * amountUnit;
     return (!isNaN(v) && v > 0) ? v : null;
   }
   if (card === 'irr') {
@@ -1531,7 +1572,7 @@ function updateSummaries() {
 
   // Invest summary
   if (mode === 'single') {
-    const amt = parseFloat(document.getElementById('single-amount').value);
+    const amt = parseFloat(document.getElementById('single-amount').value) * amountUnit;
     const rawVal = parseFloat(document.getElementById('single-years').value);
     const yrs = getSingleYears();
     const el = document.getElementById('sum-single-total');
@@ -1553,7 +1594,7 @@ function updateSummaries() {
     }
     document.getElementById('summary-periodic').classList.remove('visible');
   } else {
-    const pmt = parseFloat(document.getElementById('pmt-amount').value);
+    const pmt = parseFloat(document.getElementById('pmt-amount').value) * amountUnit;
     const yrs = parseFloat(document.getElementById('pmt-years').value);
     const freq = parseInt(document.getElementById('pmt-freq').value);
     const summary = document.getElementById('summary-periodic');
@@ -1568,7 +1609,7 @@ function updateSummaries() {
   }
 
   // Return summary
-  const fv = parseFloat(document.getElementById('return-amount').value);
+  const fv = parseFloat(document.getElementById('return-amount').value) * amountUnit;
   const rSummary = document.getElementById('summary-return');
   if (!isNaN(fv) && fv > 0) {
     // Try to compute profit if invest is filled
@@ -1731,7 +1772,7 @@ function calculate() {
       const fvCalc = calcFV(invest, r_annual);
       if (!isFinite(fvCalc) || fvCalc <= 0) { showError(t('errAbnormal')); return; }
       const el = document.getElementById('return-amount');
-      el.value = fvCalc.toFixed(2);
+      el.value = (fvCalc / amountUnit).toFixed(2);
       el.classList.add('result-value');
       filledFields.return = true;
       setCardCalculated('return');
@@ -1753,7 +1794,7 @@ function calculate() {
           : fv * r_annual / (Math.pow(1 + r_annual, n) - 1);
         if (!isFinite(amt) || amt <= 0) { showError(t('errAbnormal')); return; }
         const el = document.getElementById('single-amount');
-        el.value = amt.toFixed(2);
+        el.value = (amt / amountUnit).toFixed(2);
         el.classList.add('result-value');
         filledFields.invest = true;
         setCardCalculated('invest');
@@ -1766,7 +1807,7 @@ function calculate() {
         const PMT = calcPMT(fv, r_annual, yrs, freq);
         if (!isFinite(PMT) || PMT <= 0) { showError(t('errAbnormal')); return; }
         const el = document.getElementById('pmt-amount');
-        el.value = PMT.toFixed(2);
+        el.value = (PMT / amountUnit).toFixed(2);
         el.classList.add('result-value');
         filledFields.invest = true;
         setCardCalculated('invest');
@@ -1937,21 +1978,89 @@ const T = {
 
 function t(key) { return T[lang][key]; }
 
+// ── Amount unit (元/萬 for zh; $/K for en) ──
+let amountUnit = 1; // 1=元/$  10000=萬  1000=K
+
+function setAmountUnit(unit) {
+  if (amountUnit === unit) return;
+
+  // 換算已填入的數值（display值 × 舊單位 ÷ 新單位 = 新display值）
+  ['single-amount', 'pmt-amount', 'return-amount'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.value === '') return;
+    const v = parseFloat(el.value);
+    if (!isNaN(v)) {
+      const internal = v * amountUnit;       // 還原為元
+      const newDisplay = internal / unit;    // 換成新單位顯示
+      // 若能整除就不留小數，否則最多 4 位
+      el.value = Number.isInteger(newDisplay) ? newDisplay : parseFloat(newDisplay.toFixed(4));
+    }
+  });
+
+  amountUnit = unit;
+  _refreshAmountUnitUI();
+
+  // 重新判斷 filledFields（換算後可能改變 valid 狀態）
+  ['invest', 'return'].forEach(card => {
+    const val = getCardValue(card);
+    filledFields[card] = (val !== null);
+    updateCardState(card);
+  });
+  updateHint();
+  hideResult();
+}
+
+function _refreshAmountUnitUI() {
+  const isEn = lang === 'en';
+  const unitWan = isEn ? 1000 : 10000;
+  const labelYuan = isEn ? '$' : '元';
+  const labelWan  = isEn ? 'K' : '萬';
+  const barLabel  = isEn ? 'Unit: ' : '金額單位：';
+
+  document.getElementById('amount-unit-label').textContent = barLabel;
+  const btnYuan = document.getElementById('unit-yuan');
+  const btnWan  = document.getElementById('unit-wan');
+  if (btnYuan) {
+    btnYuan.textContent = labelYuan;
+    btnYuan.onclick = () => setAmountUnit(1);
+    btnYuan.classList.toggle('active', amountUnit === 1);
+  }
+  if (btnWan) {
+    btnWan.textContent = labelWan;
+    btnWan.onclick = () => setAmountUnit(unitWan);
+    btnWan.classList.toggle('active', amountUnit !== 1);
+  }
+}
+
 // ── Period unit (年/月) ──────────────────
 let periodUnit = 'yr'; // 'yr' | 'mo'
 
 function setPeriodUnit(unit) {
+  if (periodUnit === unit) return; // 沒有切換，不做事
+  const inp = document.getElementById('single-years');
+  const currentVal = parseFloat(inp.value);
+
+  // 先切換單位
   periodUnit = unit;
   document.getElementById('unit-yr').classList.toggle('active', unit === 'yr');
   document.getElementById('unit-mo').classList.toggle('active', unit === 'mo');
-  const inp = document.getElementById('single-years');
+
   if (unit === 'mo') {
     inp.placeholder = '432';
     inp.max = '600';
+    // 有填數字：年 → 月（× 12）
+    if (!isNaN(currentVal) && currentVal > 0) {
+      inp.value = Math.round(currentVal * 12);
+    }
   } else {
     inp.placeholder = '36';
     inp.max = '50';
+    // 有填數字：月 → 年（÷ 12，最少 1）
+    if (!isNaN(currentVal) && currentVal > 0) {
+      inp.value = Math.max(1, Math.round(currentVal / 12));
+    }
   }
+
   onFieldChange('invest');
 }
 
@@ -2021,6 +2130,7 @@ function applyLang() {
   });
   updateHint();
   updateRateDisplay();
+  _refreshAmountUnitUI(); // 語言切換時同步金額單位按鈕文字
 }
 
 // ══════════════════════════════════════════
