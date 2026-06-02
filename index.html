@@ -2065,9 +2065,11 @@ function showResult(calcType, calcValue, invest, fv) {
       document.getElementById('result-big').textContent = fmt(calcValue, 0);
       document.getElementById('result-unit').textContent = sym;
       const typeStr = interestType === 'simple' ? (lang === 'zh' ? '單利' : 'simple') : (lang === 'zh' ? '複利' : 'compound');
+      const rPctFromDom = parseFloat(document.getElementById('irr-value').value);
+      const rPctStr = isNaN(rPctFromDom) ? '' : rPctFromDom.toFixed(4) + '%';
       document.getElementById('result-desc').textContent = lang === 'zh'
-        ? `一次投入 ${sym}${fmt(calcValue,0)}，以 ${typeStr} ${r_annual !== null ? (r_annual*100).toFixed(2)+'%' : ''} 持有 ${invest.years.toFixed(1)} 年，期末達 ${sym}${fmt(fv,0)}。`
-        : `Invest ${sym}${fmt(calcValue,0)} once at ${typeStr} ${r_annual !== null ? (r_annual*100).toFixed(2)+'%' : ''} for ${invest.years.toFixed(1)} yr → ${sym}${fmt(fv,0)}.`;
+        ? `一次投入 ${sym}${fmt(calcValue,0)}，以 ${typeStr} ${rPctStr} 持有 ${invest.years.toFixed(1)} 年，期末達 ${sym}${fmt(fv,0)}。`
+        : `Invest ${sym}${fmt(calcValue,0)} once at ${typeStr} ${rPctStr} for ${invest.years.toFixed(1)} yr → ${sym}${fmt(fv,0)}.`;
     } else {
       document.getElementById('result-label').textContent = mode === 'single' ? t('resLabelInvestS') : t('resLabelInvestP');
       document.getElementById('result-big').textContent = fmt(calcValue, 0);
