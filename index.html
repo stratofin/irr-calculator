@@ -109,7 +109,7 @@
     /* ── Top controls ── */
     .controls-row {
       display: grid;
-      grid-template-columns: 1fr auto 1fr auto 1fr;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
       align-items: stretch;
       gap: 0;
       margin-bottom: 12px;
@@ -633,8 +633,17 @@
     body.force-mobile .input-suffix      { font-size: 12px !important; padding: 8px 8px !important; }
     body.force-mobile .clear-btn         { padding: 8px 8px !important; font-size: 12px !important; }
 
-    /* ── Card A: 左右欄維持，但字體與間距優化 ── */
-    body.force-mobile .field-row        { gap: 6px !important; }
+    /* ── Amount unit bar ── */
+    body.force-mobile .amount-unit-bar  { font-size: 12px !important; margin-bottom: 8px !important; gap: 8px !important; }
+    body.force-mobile .amount-unit-btn  { font-size: 12px !important; padding: 5px 14px !important; }
+
+    /* ── Card A: 手機上改為單欄垂直堆疊 ── */
+    body.force-mobile .field-row {
+      grid-template-columns: 1fr !important;
+      gap: 8px !important;
+    }
+    /* 年期的 年/月 切換按鈕放大點按區域 */
+    body.force-mobile .period-unit-btn  { padding: 6px 13px !important; font-size: 13px !important; }
 
     /* ── Card B: IRR layout 垂直堆疊，月化+翻倍橫排 ── */
     body.force-mobile .irr-layout       { grid-template-columns: 1fr !important; gap: 6px !important; }
@@ -701,16 +710,19 @@
       .controls-row { grid-template-columns: 1fr; }
       .controls-divider { width: 100%; height: 1px; }
       .conv-toggle-btn { padding: 0 10px; font-size: 11px; }
+      /* 金額單位列 */
+      .amount-unit-bar { font-size: 12px; gap: 8px; margin-bottom: 8px; }
+      .amount-unit-btn { font-size: 12px; padding: 5px 14px; }
+      /* Card A 欄位垂直堆疊 */
+      .field-row { grid-template-columns: 1fr !important; gap: 8px; }
+      /* 年/月按鈕放大 */
+      .period-unit-btn { padding: 6px 13px; font-size: 13px; }
     }
     @media (max-width: 460px) {
       .result-breakdown { grid-template-columns: 1fr; }
       .result-big { font-size: 30px; }
       .header { padding: 8px 14px; }
       .header-text h1 { font-size: 16px; }
-    }
-    @media (max-width: 460px) {
-      .result-breakdown { grid-template-columns: 1fr; }
-      .result-big { font-size: 34px; }
     }
 
     /* ── Controls wrapper (row + toggle btn) ── */
@@ -1077,8 +1089,19 @@
       <div class="control-block">
         <label id="lbl-method">📅 投資方式</label>
         <div class="mode-toggle">
-          <button class="mode-btn active" id="btn-single" onclick="setMode('single')">單筆投資</button>
+          <button class="mode-btn" id="btn-lumpsum" onclick="setMode('lumpsum')">單筆一次</button>
+          <button class="mode-btn active" id="btn-single" onclick="setMode('single')">年金投入</button>
           <button class="mode-btn" id="btn-periodic" onclick="setMode('periodic')">定期定額</button>
+        </div>
+      </div>
+
+      <div class="controls-divider" id="interest-divider"></div>
+
+      <div class="control-block" id="interest-col">
+        <label id="lbl-interest">📐 利率類型</label>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="btn-compound" onclick="setInterestType('compound')">複利</button>
+          <button class="mode-btn" id="btn-simple" onclick="setInterestType('simple')">單利</button>
         </div>
       </div>
     </div>
@@ -1132,7 +1155,40 @@
         <span class="card-status status-empty" id="status-invest">未填入</span>
       </div>
 
-      <!-- Single mode -->
+      <!-- Lump sum mode (一次性投入) -->
+      <div id="lumpsum-mode-invest" class="hidden">
+        <div class="field-row">
+          <div class="field-group">
+            <label id="lbl-lumpsum-amt">一次性投入金額</label>
+            <div class="input-wrap">
+              <span class="input-prefix" id="prefix-lumpsum">$</span>
+              <input type="number" id="lumpsum-amount" placeholder="0" min="0" step="any" oninput="onFieldChange('invest')">
+              <button class="clear-btn" onclick="clearField('lumpsum-amount', 'invest')" title="清除">✕</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label id="lbl-lumpsum-period">持有期間</label>
+            <div class="input-wrap">
+              <input type="number" id="lumpsum-years" placeholder="10" min="0" step="any" oninput="onFieldChange('invest')" style="padding-left:12px">
+              <div class="period-unit-toggle">
+                <button class="period-unit-btn active" id="lumpsum-unit-yr" onclick="setLumpsumPeriodUnit('yr')">年</button>
+                <button class="period-unit-btn" id="lumpsum-unit-mo" onclick="setLumpsumPeriodUnit('mo')">月</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-summary" id="summary-lumpsum">
+          <div class="sum-row">
+            <span>持有期間：</span>
+            <span class="sum-value" id="sum-lumpsum-period">—</span>
+          </div>
+          <div class="sum-row" style="margin-top:4px">
+            <span id="lbl-lumpsum-interest-type">計息方式：複利</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single mode (annual recurring) -->
       <div id="single-mode-invest">
         <div class="field-row">
           <div class="field-group">
@@ -1344,7 +1400,9 @@
 // ══════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════
-let mode = 'single'; // 'single' | 'periodic'
+let mode = 'single'; // 'single' | 'periodic' | 'lumpsum'
+let interestType = 'compound'; // 'compound' | 'simple'
+let lumpsumPeriodUnit = 'yr'; // 'yr' | 'mo'
 let filledFields = { invest: false, return: false, irr: false };
 
 // ── Currency helpers ──────────────────────
@@ -1356,7 +1414,7 @@ function getCurrencySymbol() {
 
 function updateCurrencyDisplay() {
   const sym = getCurrencySymbol();
-  ['prefix-single','prefix-periodic','prefix-return'].forEach(id => {
+  ['prefix-single','prefix-periodic','prefix-return','prefix-lumpsum'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = sym;
   });
@@ -1379,16 +1437,66 @@ function fmtMoney(n) {
 // ── Mode switching ───────────────────────
 function setMode(m) {
   mode = m;
+  document.getElementById('btn-lumpsum').classList.toggle('active', m === 'lumpsum');
   document.getElementById('btn-single').classList.toggle('active', m === 'single');
   document.getElementById('btn-periodic').classList.toggle('active', m === 'periodic');
+  document.getElementById('lumpsum-mode-invest').classList.toggle('hidden', m !== 'lumpsum');
   document.getElementById('single-mode-invest').classList.toggle('hidden', m !== 'single');
   document.getElementById('periodic-mode-invest').classList.toggle('hidden', m !== 'periodic');
+  // highlight interest type control when in lumpsum mode
+  document.getElementById('interest-col').style.opacity = m === 'lumpsum' ? '1' : '0.45';
   filledFields.invest = false;
   updateCardState('invest');
   updateHint();
   hideResult();
   clearError();
   updateSummaries();
+  updateCardBLabel();
+}
+
+// ── Interest type ─────────────────────────
+function setInterestType(t) {
+  interestType = t;
+  document.getElementById('btn-compound').classList.toggle('active', t === 'compound');
+  document.getElementById('btn-simple').classList.toggle('active', t === 'simple');
+  hideResult();
+  clearError();
+  updateSummaries();
+  updateCardBLabel();
+}
+
+function updateCardBLabel() {
+  const isSimple = interestType === 'simple' && mode === 'lumpsum';
+  const bTitle = document.getElementById('card-b-title');
+  if (bTitle) bTitle.textContent = isSimple ? (lang === 'zh' ? '年利率（單利）' : 'Annual Rate (Simple)') : (lang === 'zh' ? '年化報酬率 (IRR)' : 'Annual Return (IRR)');
+  const irrLabel = document.querySelector('#summary-irr-info .field-group label');
+  if (irrLabel) irrLabel.textContent = isSimple ? (lang === 'zh' ? '年利率（每年）' : 'Annual Rate') : (lang === 'zh' ? '年化報酬率（每年）' : 'Annual Return Rate');
+}
+
+// ── Lump sum period unit ──────────────────
+function setLumpsumPeriodUnit(unit) {
+  if (lumpsumPeriodUnit === unit) return;
+  const inp = document.getElementById('lumpsum-years');
+  const currentVal = parseFloat(inp.value);
+  lumpsumPeriodUnit = unit;
+  document.getElementById('lumpsum-unit-yr').classList.toggle('active', unit === 'yr');
+  document.getElementById('lumpsum-unit-mo').classList.toggle('active', unit === 'mo');
+  if (unit === 'mo') {
+    inp.placeholder = '120';
+    if (!isNaN(currentVal) && currentVal > 0) inp.value = Math.round(currentVal * 12);
+  } else {
+    inp.placeholder = '10';
+    if (!isNaN(currentVal) && currentVal > 0) inp.value = Math.max(0.1, +(currentVal / 12).toFixed(2));
+  }
+  onFieldChange('invest');
+}
+
+function getLumpsumYears() {
+  const el = document.getElementById('lumpsum-years');
+  const raw = el.value.trim();
+  const val = raw !== '' ? parseFloat(raw) : parseFloat(el.placeholder);
+  if (isNaN(val) || val <= 0) return NaN;
+  return lumpsumPeriodUnit === 'mo' ? val / 12 : val;
 }
 
 // ── Field state ──────────────────────────
@@ -1427,6 +1535,7 @@ function onFieldChange(card) {
   }
   if (card === 'irr' || card === 'return') {
     // B 或 C 有變動 → 清掉自動算出的 A（投資輸入）
+    clearAutoCalcField('lumpsum-amount', 'invest');
     clearAutoCalcField('single-amount', 'invest');
     clearAutoCalcField('pmt-amount', 'invest');
   }
@@ -1448,6 +1557,8 @@ function clearField(inputId, card) {
   if (card === 'invest') {
     const ids = mode === 'single'
       ? ['single-amount','single-years']
+      : mode === 'lumpsum'
+      ? ['lumpsum-amount','lumpsum-years']
       : ['pmt-amount','pmt-years'];
     ids.forEach(id => {
       const e = document.getElementById(id);
@@ -1471,7 +1582,7 @@ function clearField(inputId, card) {
 }
 
 function resetAll() {
-  ['single-amount','single-years','pmt-amount','pmt-years','return-amount','irr-value'].forEach(id => {
+  ['lumpsum-amount','lumpsum-years','single-amount','single-years','pmt-amount','pmt-years','return-amount','irr-value'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('result-value'); }
   });
@@ -1487,6 +1598,12 @@ function resetAll() {
 // ── Get card value ────────────────────────
 function getCardValue(card) {
   if (card === 'invest') {
+    if (mode === 'lumpsum') {
+      const amt = parseFloat(document.getElementById('lumpsum-amount').value) * amountUnit;
+      const yrs = getLumpsumYears();
+      if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs > 0) return { amount: amt, years: yrs, lumpsum: true };
+      return null;
+    }
     if (mode === 'single') {
       const amt = parseFloat(document.getElementById('single-amount').value) * amountUnit;
       const yrs = getSingleYears();
@@ -1570,8 +1687,26 @@ function updateHint() {
 function updateSummaries() {
   const sym = getCurrencySymbol();
 
-  // Invest summary
-  if (mode === 'single') {
+  // Invest summary — lump sum mode
+  if (mode === 'lumpsum') {
+    const amt = parseFloat(document.getElementById('lumpsum-amount').value) * amountUnit;
+    const rawVal = parseFloat(document.getElementById('lumpsum-years').value);
+    const yrs = getLumpsumYears();
+    const summary = document.getElementById('summary-lumpsum');
+    const typeLabel = document.getElementById('lbl-lumpsum-interest-type');
+    if (typeLabel) typeLabel.textContent = '計息方式：' + (interestType === 'simple' ? '單利（Simple）' : '複利（Compound）');
+    if (!isNaN(amt) && amt > 0 && !isNaN(yrs) && yrs > 0) {
+      const periodStr = lumpsumPeriodUnit === 'mo'
+        ? Math.round(rawVal) + ' 月（' + yrs.toFixed(1) + ' 年）'
+        : rawVal + ' 年';
+      document.getElementById('sum-lumpsum-period').textContent = periodStr;
+      summary.classList.add('visible');
+    } else {
+      summary.classList.remove('visible');
+    }
+    document.getElementById('summary-single').classList.remove('visible');
+    document.getElementById('summary-periodic').classList.remove('visible');
+  } else if (mode === 'single') {
     const amt = parseFloat(document.getElementById('single-amount').value) * amountUnit;
     const rawVal = parseFloat(document.getElementById('single-years').value);
     const yrs = getSingleYears();
@@ -1616,7 +1751,8 @@ function updateSummaries() {
     const inv = getCardValue('invest');
     let totalInvested = null;
     if (inv) {
-      if (mode === 'single') totalInvested = inv.amount * Math.round(inv.years); // 每年金額 × 年期
+      if (mode === 'lumpsum') totalInvested = inv.amount;
+      else if (mode === 'single') totalInvested = inv.amount * Math.round(inv.years);
       else totalInvested = inv.pmt * Math.round(inv.years * inv.freq);
     }
     if (totalInvested !== null) {
@@ -1703,6 +1839,11 @@ function buildCashFlows(invest, fv) {
 
 // ── FV from IRR (annuity or single) ──────
 function calcFV(invest, r_annual) {
+  if (mode === 'lumpsum') {
+    const { amount: P, years: n } = invest;
+    if (interestType === 'simple') return P * (1 + r_annual * n);
+    return P * Math.pow(1 + r_annual, n);
+  }
   if (mode === 'single') {
     const { amount: amt, years } = invest;
     const n = Math.round(years);
@@ -1751,6 +1892,53 @@ function calculate() {
   const empty = Object.keys(filledFields).find(k => !filledFields[k]);
 
   try {
+    // ── Lump sum mode: exact formulas ──────
+    if (mode === 'lumpsum') {
+      if (empty === 'irr' || count === 3) {
+        if (!invest || fv === null) { showError(t('errNeedAC')); return; }
+        const { amount: P, years: n } = invest;
+        let r;
+        if (interestType === 'simple') {
+          r = (fv / P - 1) / n;
+        } else {
+          r = Math.pow(fv / P, 1 / n) - 1;
+        }
+        if (!isFinite(r) || isNaN(r) || r <= -1) { showError(t('errNoConverge')); return; }
+        const pct = (r * 100).toFixed(4);
+        const el = document.getElementById('irr-value');
+        el.value = pct; el.classList.add('result-value');
+        filledFields.irr = true; setCardCalculated('irr');
+        showResult('irr', r * 100, invest, fv);
+        updateSummaries();
+      } else if (empty === 'return') {
+        if (!invest || r_annual === null) { showError(t('errNeedAB')); return; }
+        const fvCalc = calcFV(invest, r_annual);
+        if (!isFinite(fvCalc) || fvCalc <= 0) { showError(t('errAbnormal')); return; }
+        const el = document.getElementById('return-amount');
+        el.value = (fvCalc / amountUnit).toFixed(2); el.classList.add('result-value');
+        filledFields.return = true; setCardCalculated('return');
+        showResult('return', fvCalc, invest, fvCalc);
+        updateSummaries();
+      } else if (empty === 'invest') {
+        if (fv === null || r_annual === null) { showError(t('errNeedBC')); return; }
+        const yrs = getLumpsumYears();
+        if (isNaN(yrs) || yrs <= 0) { showError(t('errYearsS')); return; }
+        let P;
+        if (interestType === 'simple') {
+          P = fv / (1 + r_annual * yrs);
+        } else {
+          P = fv / Math.pow(1 + r_annual, yrs);
+        }
+        if (!isFinite(P) || P <= 0) { showError(t('errAbnormal')); return; }
+        const el = document.getElementById('lumpsum-amount');
+        el.value = (P / amountUnit).toFixed(2); el.classList.add('result-value');
+        filledFields.invest = true; setCardCalculated('invest');
+        showResult('invest', P, { amount: P, years: yrs, lumpsum: true }, fv);
+        updateSummaries();
+      }
+      return;
+    }
+
     if (empty === 'irr' || count === 3) {
       // Calculate IRR
       if (!invest || fv === null) { showError(t('errNeedAC')); return; }
@@ -1831,7 +2019,9 @@ function showResult(calcType, calcValue, invest, fv) {
 
   // Compute total invested
   let totalInvested = 0;
-  if (mode === 'single') {
+  if (mode === 'lumpsum') {
+    totalInvested = invest.amount; // 一次性投入
+  } else if (mode === 'single') {
     totalInvested = invest.amount * Math.round(invest.years); // 每年投入 × 年期
   } else {
     totalInvested = invest.pmt * Math.round(invest.years * invest.freq);
@@ -1839,11 +2029,29 @@ function showResult(calcType, calcValue, invest, fv) {
   const profit = fv - totalInvested;
 
   if (calcType === 'irr') {
-    document.getElementById('result-label').textContent = t('resLabelIrr');
+    const isSimpleLump = mode === 'lumpsum' && interestType === 'simple';
+    document.getElementById('result-label').textContent = isSimpleLump
+      ? (lang === 'zh' ? '📐 年利率（單利）' : '📐 Annual Rate (Simple)')
+      : t('resLabelIrr');
     document.getElementById('result-big').textContent = calcValue.toFixed(4);
     document.getElementById('result-unit').textContent = t('resUnitIrr');
-    const r72 = calcValue !== 0 ? (72 / calcValue).toFixed(1) : '—';
-    document.getElementById('result-desc').textContent = t('resDescIrr')(calcValue.toFixed(4), r72);
+    if (isSimpleLump) {
+      const n = invest.years;
+      document.getElementById('result-desc').textContent =
+        lang === 'zh'
+          ? `單利年利率 ${calcValue.toFixed(4)}%，持有 ${n.toFixed(1)} 年，本利和達 ${sym}${fmt(fv,0)}。`
+          : `Simple annual rate ${calcValue.toFixed(4)}%. Hold ${n.toFixed(1)} yr → ${sym}${fmt(fv,0)}.`;
+    } else if (mode === 'lumpsum') {
+      const n = invest.years;
+      const r72 = calcValue !== 0 ? (72 / calcValue).toFixed(1) : '—';
+      document.getElementById('result-desc').textContent =
+        lang === 'zh'
+          ? `複利年化報酬率 ${calcValue.toFixed(4)}%，持有 ${n.toFixed(1)} 年，翻倍約需 ${r72} 年。`
+          : `Compound annual return ${calcValue.toFixed(4)}%. Hold ${n.toFixed(1)} yr, doubles in ~${r72} yr.`;
+    } else {
+      const r72 = calcValue !== 0 ? (72 / calcValue).toFixed(1) : '—';
+      document.getElementById('result-desc').textContent = t('resDescIrr')(calcValue.toFixed(4), r72);
+    }
     document.getElementById('result-sub').textContent = t('resSubIrr');
   } else if (calcType === 'return') {
     document.getElementById('result-label').textContent = t('resLabelReturn');
@@ -1852,13 +2060,23 @@ function showResult(calcType, calcValue, invest, fv) {
     document.getElementById('result-desc').textContent = t('resDescReturn')(sym, fmt(fv,0), fmt(profit,0));
     document.getElementById('result-sub').textContent = t('resSubReturn');
   } else if (calcType === 'invest') {
-    document.getElementById('result-label').textContent = mode === 'single' ? t('resLabelInvestS') : t('resLabelInvestP');
-    document.getElementById('result-big').textContent = fmt(calcValue, 0);
-    document.getElementById('result-unit').textContent = sym;
-    const periods = mode === 'single' ? Math.round(invest.years) : Math.round(invest.years * invest.freq);
-    document.getElementById('result-desc').textContent = mode === 'single'
-      ? t('resDescInvestS')(sym, fmt(calcValue,0), Math.round(invest.years), fmt(fv,0))
-      : t('resDescInvestP')(sym, fmt(calcValue,0), periods, fmt(fv,0));
+    if (mode === 'lumpsum') {
+      document.getElementById('result-label').textContent = lang === 'zh' ? '💵 一次性投入金額' : '💵 Lump Sum Amount';
+      document.getElementById('result-big').textContent = fmt(calcValue, 0);
+      document.getElementById('result-unit').textContent = sym;
+      const typeStr = interestType === 'simple' ? (lang === 'zh' ? '單利' : 'simple') : (lang === 'zh' ? '複利' : 'compound');
+      document.getElementById('result-desc').textContent = lang === 'zh'
+        ? `一次投入 ${sym}${fmt(calcValue,0)}，以 ${typeStr} ${r_annual !== null ? (r_annual*100).toFixed(2)+'%' : ''} 持有 ${invest.years.toFixed(1)} 年，期末達 ${sym}${fmt(fv,0)}。`
+        : `Invest ${sym}${fmt(calcValue,0)} once at ${typeStr} ${r_annual !== null ? (r_annual*100).toFixed(2)+'%' : ''} for ${invest.years.toFixed(1)} yr → ${sym}${fmt(fv,0)}.`;
+    } else {
+      document.getElementById('result-label').textContent = mode === 'single' ? t('resLabelInvestS') : t('resLabelInvestP');
+      document.getElementById('result-big').textContent = fmt(calcValue, 0);
+      document.getElementById('result-unit').textContent = sym;
+      const periods = mode === 'single' ? Math.round(invest.years) : Math.round(invest.years * invest.freq);
+      document.getElementById('result-desc').textContent = mode === 'single'
+        ? t('resDescInvestS')(sym, fmt(calcValue,0), Math.round(invest.years), fmt(fv,0))
+        : t('resDescInvestP')(sym, fmt(calcValue,0), periods, fmt(fv,0));
+    }
     document.getElementById('result-sub').textContent = t('resSubInvest');
   }
 
@@ -1900,7 +2118,9 @@ const T = {
     lblCurrency: '💱 貨幣',
     lblConvert: '🔄 換算至',
     lblMethod: '📅 投資方式',
-    modeSingle: '單筆投資', modePeriodic: '定期定額',
+    lblInterest: '📐 利率類型',
+    modeLumpsum: '單筆一次', modeSingle: '年金投入', modePeriodic: '定期定額',
+    modeCompound: '複利', modeSimple: '單利',
     cardATitle: '投資輸入', cardBTitle: '年化報酬率 (IRR)', cardCTitle: '最終報酬',
     lblAnnualAmt: '每年投入金額', lblPeriodicAmt: '每期投入金額',
     statusFilled: '已填入', statusEmpty: '未填入', statusResult: '已推算',
@@ -1940,7 +2160,9 @@ const T = {
     lblCurrency: '💱 Currency',
     lblConvert: '🔄 Convert To',
     lblMethod: '📅 Method',
-    modeSingle: 'Lump Sum', modePeriodic: 'Periodic DCA',
+    lblInterest: '📐 Interest',
+    modeLumpsum: 'Lump Sum', modeSingle: 'Annual DCA', modePeriodic: 'Periodic DCA',
+    modeCompound: 'Compound', modeSimple: 'Simple',
     cardATitle: 'Investment', cardBTitle: 'Annual Return (IRR)', cardCTitle: 'Final Return',
     lblAnnualAmt: 'Annual Investment', lblPeriodicAmt: 'Amount / Period',
     statusFilled: 'Filled', statusEmpty: 'Empty', statusResult: 'Calculated',
@@ -1985,7 +2207,7 @@ function setAmountUnit(unit) {
   if (amountUnit === unit) return;
 
   // 換算已填入的數值（display值 × 舊單位 ÷ 新單位 = 新display值）
-  ['single-amount', 'pmt-amount', 'return-amount'].forEach(id => {
+  ['lumpsum-amount', 'single-amount', 'pmt-amount', 'return-amount'].forEach(id => {
     const el = document.getElementById(id);
     if (!el || el.value === '') return;
     const v = parseFloat(el.value);
@@ -2101,8 +2323,12 @@ function applyLang() {
   set('lbl-currency', L.lblCurrency);
   set('lbl-convert', L.lblConvert);
   set('lbl-method', L.lblMethod);
+  set('lbl-interest', L.lblInterest);
+  set('btn-lumpsum', L.modeLumpsum);
   set('btn-single', L.modeSingle);
   set('btn-periodic', L.modePeriodic);
+  set('btn-compound', L.modeCompound);
+  set('btn-simple', L.modeSimple);
   set('card-a-title', L.cardATitle);
   set('card-b-title', L.cardBTitle);
   set('card-c-title', L.cardCTitle);
@@ -2329,6 +2555,9 @@ function updateConverter() {
 updateHint();
 updateCurrencyDisplay();
 applyLang();
+// 初始化：利率類型控制項反映非 lumpsum 狀態
+document.getElementById('interest-col').style.opacity = '0.45';
+updateCardBLabel();
 
 // 自動偵測手機或電腦，套用對應版面
 function detectMobile() {
