@@ -500,37 +500,6 @@
     .period-unit-btn.active { background: var(--primary); color: #fff; }
     .period-unit-btn:hover:not(.active) { background: var(--surface3); color: var(--text); }
 
-    /* ── Amount unit toggle bar (元/萬 or $/K) ── */
-    .amount-unit-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 12px 0;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .amount-unit-label { white-space: nowrap; }
-    .amount-unit-group {
-      display: flex;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .amount-unit-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 600;
-      padding: 4px 14px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: inherit;
-      line-height: 1.4;
-    }
-    .amount-unit-btn + .amount-unit-btn { border-left: 1px solid var(--border); }
-    .amount-unit-btn.active { background: var(--primary); color: #fff; }
-    .amount-unit-btn:hover:not(.active) { background: var(--surface3); color: var(--text); }
 
     /* ── View toggle button ── */
     .view-toggle-btn {
@@ -589,6 +558,35 @@
     }
     .irr-stat-val.monthly { color: var(--accent); }
     .irr-stat-val.rule72  { color: var(--gold); }
+
+    /* ── Multiplier buttons ── */
+    .mult-btns {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .mult-btn {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      line-height: 1.6;
+    }
+    .mult-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .mult-btn:active { transform: scale(0.9); }
 
     /* ══ MOBILE VIEW (force-mobile) ══ */
 
@@ -1135,15 +1133,6 @@
     <span id="error-text">請確認輸入資料</span>
   </div>
 
-  <!-- ══ Amount unit toggle ══ -->
-  <div class="amount-unit-bar">
-    <span class="amount-unit-label" id="amount-unit-label">金額單位：</span>
-    <div class="amount-unit-group">
-      <button class="amount-unit-btn active" id="unit-yuan" onclick="setAmountUnit(1)">元</button>
-      <button class="amount-unit-btn" id="unit-wan" onclick="setAmountUnit(10000)">萬</button>
-    </div>
-  </div>
-
   <!-- ══ THREE DATA CARDS ══ -->
   <div class="data-grid">
 
@@ -1152,6 +1141,12 @@
       <div class="card-header">
         <div class="card-label" id="label-invest">A</div>
         <div class="card-title" id="card-a-title">投資輸入</div>
+        <div class="mult-btns" id="mult-btns-a">
+          <button class="mult-btn" onclick="applyMultiplier(1000)"    data-zh="千"  data-en="K">千</button>
+          <button class="mult-btn" onclick="applyMultiplier(10000)"   data-zh="萬"  data-en="10K">萬</button>
+          <button class="mult-btn" onclick="applyMultiplier(100000)"  data-zh="十萬" data-en="100K">十萬</button>
+          <button class="mult-btn" onclick="applyMultiplier(1000000)" data-zh="百萬" data-en="1M">百萬</button>
+        </div>
         <span class="card-status status-empty" id="status-invest">未填入</span>
       </div>
 
@@ -2202,58 +2197,26 @@ const T = {
 
 function t(key) { return T[lang][key]; }
 
-// ── Amount unit (元/萬 for zh; $/K for en) ──
-let amountUnit = 1; // 1=元/$  10000=萬  1000=K
+// ── Amount unit (固定為元，透過進位按鈕處理) ──
+const amountUnit = 1;
 
-function setAmountUnit(unit) {
-  if (amountUnit === unit) return;
-
-  // 換算已填入的數值（display值 × 舊單位 ÷ 新單位 = 新display值）
-  ['lumpsum-amount', 'single-amount', 'pmt-amount', 'return-amount'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el || el.value === '') return;
-    const v = parseFloat(el.value);
-    if (!isNaN(v)) {
-      const internal = v * amountUnit;       // 還原為元
-      const newDisplay = internal / unit;    // 換成新單位顯示
-      // 若能整除就不留小數，否則最多 4 位
-      el.value = Number.isInteger(newDisplay) ? newDisplay : parseFloat(newDisplay.toFixed(4));
-    }
-  });
-
-  amountUnit = unit;
-  _refreshAmountUnitUI();
-
-  // 重新判斷 filledFields（換算後可能改變 valid 狀態）
-  ['invest', 'return'].forEach(card => {
-    const val = getCardValue(card);
-    filledFields[card] = (val !== null);
-    updateCardState(card);
-  });
-  updateHint();
-  hideResult();
-}
-
-function _refreshAmountUnitUI() {
-  const isEn = lang === 'en';
-  const unitWan = isEn ? 1000 : 10000;
-  const labelYuan = isEn ? '$' : '元';
-  const labelWan  = isEn ? 'K' : '萬';
-  const barLabel  = isEn ? 'Unit: ' : '金額單位：';
-
-  document.getElementById('amount-unit-label').textContent = barLabel;
-  const btnYuan = document.getElementById('unit-yuan');
-  const btnWan  = document.getElementById('unit-wan');
-  if (btnYuan) {
-    btnYuan.textContent = labelYuan;
-    btnYuan.onclick = () => setAmountUnit(1);
-    btnYuan.classList.toggle('active', amountUnit === 1);
-  }
-  if (btnWan) {
-    btnWan.textContent = labelWan;
-    btnWan.onclick = () => setAmountUnit(unitWan);
-    btnWan.classList.toggle('active', amountUnit !== 1);
-  }
+// ── Multiplier buttons ────────────────────
+function applyMultiplier(mult) {
+  // Target the amount input for the current mode
+  const idMap = { lumpsum: 'lumpsum-amount', single: 'single-amount', periodic: 'pmt-amount' };
+  const id = idMap[mode] || 'single-amount';
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = parseFloat(el.value);
+  // If field has a positive number, multiply it; otherwise treat as 1
+  const base = (!isNaN(current) && current > 0) ? current : 1;
+  const result = base * mult;
+  // Display as integer if whole number, else up to 4 decimal places
+  el.value = Number.isInteger(result) ? result : parseFloat(result.toFixed(4));
+  el.classList.remove('result-value');
+  onFieldChange('invest');
+  // Brief visual flash on the button for feedback
+  el.focus();
 }
 
 // ── Period unit (年/月) ──────────────────
@@ -2331,6 +2294,10 @@ function applyLang() {
   set('btn-periodic', L.modePeriodic);
   set('btn-compound', L.modeCompound);
   set('btn-simple', L.modeSimple);
+  // Update multiplier button labels
+  document.querySelectorAll('#mult-btns-a .mult-btn').forEach(btn => {
+    btn.textContent = lang === 'zh' ? btn.dataset.zh : btn.dataset.en;
+  });
   set('card-a-title', L.cardATitle);
   set('card-b-title', L.cardBTitle);
   set('card-c-title', L.cardCTitle);
@@ -2519,6 +2486,298 @@ function updateConverter() {
   const baseSym = baseSel.selectedOptions[0]?.dataset.symbol || '';
   const targetSym = getConvertSymbol();
 
+  // Update labels
+  document.getElementById('conv-from-sym').textContent = baseSym;
+  document.getElementById('conv-from-code').textContent = base;
+  document.getElementById('conv-result-code').textContent = target;
+
+  const amtEl = document.getElementById('conv-amount');
+  const amt = parseFloat(amtEl.value);
+  const resultEl = document.getElementById('conv-result-num');
+  const rateInfoEl = document.getElementById('conv-rate-info');
+
+  if (base === target) {
+    resultEl.textContent = isNaN(amt) ? '—' : amt.toLocaleString();
+    rateInfoEl.textContent = '1 ' + base + ' = 1 ' + target;
+    return;
+  }
+
+  const rate = exchangeRates[target];
+  if (!rate) {
+    resultEl.textContent = '—';
+    rateInfoEl.textContent = t('rateLoading');
+    return;
+  }
+
+  if (!isNaN(amt) && amt >= 0) {
+    const converted = amt * rate;
+    const decimals = converted >= 100 ? 0 : converted >= 1 ? 2 : 4;
+    resultEl.textContent = targetSym + converted.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+  } else {
+    resultEl.textContent = '—';
+  }
+  const rateDecimals = rate >= 10 ? 2 : 4;
+  rateInfoEl.textContent = `1 ${base} = ${rate.toLocaleString(undefined, { maximumFractionDigits: rateDecimals })} ${target}`;
+}
+
+// ── Init ─────────────────────────────────
+updateHint();
+updateCurrencyDisplay();
+applyLang();
+// 初始化：利率類型控制項反映非 lumpsum 狀態
+document.getElementById('interest-col').style.opacity = '0.45';
+updateCardBLabel();
+
+// 自動偵測手機或電腦，套用對應版面
+function detectMobile() {
+  const smallScreen  = window.matchMedia('(max-width: 800px)').matches;
+  const portrait     = window.matchMedia('(orientation: portrait)').matches;
+  const hasTouch     = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const mobileAgent  = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+  // 直立螢幕 + 觸控，或手機 UA，或小螢幕 → 手機模式
+  return (portrait && hasTouch) || mobileAgent || smallScreen;
+}
+
+function applyViewMode(isMobile) {
+  forceMobile = isMobile;
+  document.body.classList.toggle('force-mobile', isMobile);
+  const btn = document.getElementById('view-toggle-btn');
+  const L = T[lang];
+  if (btn) {
+    btn.textContent = isMobile ? L.viewDesktop : L.viewMobile;
+    btn.classList.toggle('mobile-mode', isMobile);
+  }
+}
+
+(function initViewMode() {
+  applyViewMode(detectMobile());
+
+  // 當裝置旋轉時重新判斷（直立↔橫式）
+  window.matchMedia('(orientation: portrait)').addEventListener('change', function() {
+    applyViewMode(detectMobile());
+  });
+})();
+
+// ══════════════════════════════════════════
+// MULTI-SCENARIO COMPARE
+// ══════════════════════════════════════════
+
+let scenarios = [];
+let scenarioCounter = 0;
+let compareOpen = false;
+
+const SC_COLORS = ['sc-label-1','sc-label-2','sc-label-3','sc-label-4'];
+
+function toggleCompare() {
+  compareOpen = !compareOpen;
+  const section = document.getElementById('compare-section');
+  const btn = document.getElementById('compare-toggle-btn');
+  section.style.display = compareOpen ? 'block' : 'none';
+  btn.classList.toggle('active', compareOpen);
+  if (compareOpen && scenarios.length === 0) {
+    addScenario();
+    addScenario();
+  }
+}
+
+function addScenario() {
+  if (scenarios.length >= 4) return;
+  scenarioCounter++;
+  scenarios.push({ id: scenarioCounter, amount: '', years: '', irr: '' });
+  renderScenarios();
+  document.getElementById('sc-add-btn').disabled = scenarios.length >= 4;
+}
+
+function removeScenario(id) {
+  scenarios = scenarios.filter(s => s.id !== id);
+  renderScenarios();
+  document.getElementById('sc-add-btn').disabled = scenarios.length >= 4;
+}
+
+function calcScenarioFV(amount, years, irr) {
+  const amt = parseFloat(amount);
+  const yrs = parseFloat(years);
+  const r   = parseFloat(irr) / 100;
+  if (isNaN(amt) || amt <= 0 || isNaN(yrs) || yrs <= 0 || isNaN(r)) return null;
+  const n = Math.round(yrs);
+  if (n === 1) return amt * (1 + r);
+  if (Math.abs(r) < 1e-12) return amt * n;
+  return amt * (Math.pow(1 + r, n) - 1) / r;
+}
+
+function onScenarioChange(id) {
+  const s = scenarios.find(s => s.id === id);
+  if (!s) return;
+  s.amount = document.getElementById('sc-amt-' + id).value;
+  s.years  = document.getElementById('sc-yrs-' + id).value;
+  s.irr    = document.getElementById('sc-irr-'  + id).value;
+  refreshScenarioResult(id);
+  renderCompareTable();
+}
+
+function refreshScenarioResult(id) {
+  const s = scenarios.find(s => s.id === id);
+  if (!s) return;
+  const sym = getCurrencySymbol();
+  const fv  = calcScenarioFV(s.amount, s.years, s.irr);
+  const bar = document.getElementById('sc-result-bar-' + id);
+  const card = document.getElementById('sc-card-' + id);
+  if (!bar) return;
+
+  if (fv !== null && isFinite(fv)) {
+    const amt  = parseFloat(s.amount);
+    const yrs  = parseFloat(s.years);
+    const n    = Math.round(yrs);
+    const invested = amt * n;
+    const profit   = fv - invested;
+    const pct      = invested > 0 ? (profit / invested * 100).toFixed(1) : '0';
+    bar.innerHTML  = `
+      <span class="sc-fv-val">${sym}${fmt(fv, 0)}</span>
+      <span class="sc-profit-val ${profit >= 0 ? 'pos' : 'neg'}">
+        ${profit >= 0 ? '+' : ''}${sym}${fmt(Math.abs(profit), 0)} (${profit >= 0 ? '+' : '-'}${Math.abs(parseFloat(pct)).toFixed(1)}%)
+      </span>`;
+    card && card.classList.add('sc-has-result');
+  } else {
+    bar.innerHTML = '<span class="sc-result-empty">填入三項數值即可試算</span>';
+    card && card.classList.remove('sc-has-result');
+  }
+}
+
+function renderScenarios() {
+  const grid = document.getElementById('scenarios-grid');
+  const sym  = getCurrencySymbol();
+  grid.innerHTML = scenarios.map((s, i) => {
+    const colorClass = SC_COLORS[i] || SC_COLORS[0];
+    const canRemove  = scenarios.length > 1;
+    return `
+    <div class="scenario-card" id="sc-card-${s.id}">
+      <div class="sc-card-header">
+        <span class="sc-label ${colorClass}">方案 ${i + 1}</span>
+        ${canRemove ? `<button class="sc-remove-btn" onclick="removeScenario(${s.id})" title="移除">✕ 移除</button>` : ''}
+      </div>
+      <div class="sc-inputs">
+        <div class="sc-field">
+          <label>每年投入</label>
+          <div class="input-wrap">
+            <span class="input-prefix">${sym}</span>
+            <input type="number" id="sc-amt-${s.id}" value="${s.amount}"
+              placeholder="10000" min="0" step="any"
+              oninput="onScenarioChange(${s.id})">
+          </div>
+        </div>
+        <div class="sc-field">
+          <label>年期</label>
+          <div class="input-wrap">
+            <input type="number" id="sc-yrs-${s.id}" value="${s.years}"
+              placeholder="10" min="1" step="1"
+              oninput="onScenarioChange(${s.id})" style="padding-left:10px">
+            <span class="input-suffix">年</span>
+          </div>
+        </div>
+        <div class="sc-field">
+          <label>年化報酬率</label>
+          <div class="input-wrap">
+            <input type="number" id="sc-irr-${s.id}" value="${s.irr}"
+              placeholder="8" step="0.1"
+              oninput="onScenarioChange(${s.id})" style="padding-left:10px">
+            <span class="input-suffix">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="sc-result-bar" id="sc-result-bar-${s.id}">
+        <span class="sc-result-empty">填入三項數值即可試算</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Re-populate values and results
+  scenarios.forEach(s => {
+    if (s.amount) document.getElementById('sc-amt-' + s.id).value = s.amount;
+    if (s.years)  document.getElementById('sc-yrs-' + s.id).value = s.years;
+    if (s.irr)    document.getElementById('sc-irr-'  + s.id).value = s.irr;
+    refreshScenarioResult(s.id);
+  });
+
+  renderCompareTable();
+}
+
+function renderCompareTable() {
+  const wrap = document.getElementById('compare-table-wrap');
+  if (scenarios.length < 2) { wrap.innerHTML = ''; return; }
+
+  const sym  = getCurrencySymbol();
+  const data = scenarios.map((s, i) => {
+    const fv  = calcScenarioFV(s.amount, s.years, s.irr);
+    const amt = parseFloat(s.amount);
+    const yrs = parseFloat(s.years);
+    const irr = parseFloat(s.irr);
+    const n   = (!isNaN(yrs) && yrs > 0) ? Math.round(yrs) : null;
+    const invested = (n && !isNaN(amt)) ? amt * n : null;
+    const profit   = (fv !== null && invested !== null) ? fv - invested : null;
+    return { label: `方案 ${i+1}`, fv, invested, profit, irr };
+  });
+
+  const fvValues     = data.map(d => d.fv).filter(v => v != null && isFinite(v));
+  const profitValues = data.map(d => d.profit).filter(v => v != null && isFinite(v));
+  const maxFV        = fvValues.length    ? Math.max(...fvValues)    : null;
+  const maxProfit    = profitValues.length ? Math.max(...profitValues) : null;
+
+  const fmtCell = (val, prefix) =>
+    val != null && isFinite(val) ? prefix + fmt(Math.abs(val), 0) : '—';
+
+  wrap.innerHTML = `
+    <div class="compare-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>指標</th>
+            ${data.map((d, i) => {
+              const isBest = d.fv != null && d.fv === maxFV && fvValues.length > 1;
+              return `<th class="${SC_COLORS[i]}">${d.label}${isBest ? '<span class="best-badge">🏆 最高報酬</span>' : ''}</th>`;
+            }).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>總投入本金</td>
+            ${data.map(d => `<td>${d.invested != null ? sym + fmt(d.invested, 0) : '—'}</td>`).join('')}
+          </tr>
+          <tr>
+            <td>最終報酬</td>
+            ${data.map(d => {
+              const isBest = d.fv != null && d.fv === maxFV && fvValues.length > 1;
+              return `<td class="${isBest ? 'best-fv' : ''}">${d.fv != null ? sym + fmt(d.fv, 0) : '—'}</td>`;
+            }).join('')}
+          </tr>
+          <tr>
+            <td>投資獲利</td>
+            ${data.map(d => {
+              const isBest = d.profit != null && d.profit === maxProfit && profitValues.length > 1;
+              const cls    = d.profit != null ? (d.profit < 0 ? 'neg-profit' : isBest ? 'best-profit' : '') : '';
+              const sign   = d.profit != null ? (d.profit >= 0 ? '+' : '-') : '';
+              return `<td class="${cls}">${d.profit != null ? sign + sym + fmt(Math.abs(d.profit), 0) : '—'}</td>`;
+            }).join('')}
+          </tr>
+          <tr>
+            <td>年化報酬率</td>
+            ${data.map(d => `<td>${!isNaN(d.irr) ? d.irr.toFixed(2) + '%' : '—'}</td>`).join('')}
+          </tr>
+          <tr>
+            <td>投報率</td>
+            ${data.map(d => {
+              if (d.profit == null || d.invested == null || d.invested <= 0) return '<td>—</td>';
+              const pct = (d.profit / d.invested * 100).toFixed(1);
+              return `<td class="${d.profit >= 0 ? '' : 'neg-profit'}">${d.profit >= 0 ? '+' : ''}${pct}%</td>`;
+            }).join('')}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+</script>
+
+</body>
+</html>
   // Update labels
   document.getElementById('conv-from-sym').textContent = baseSym;
   document.getElementById('conv-from-code').textContent = base;
